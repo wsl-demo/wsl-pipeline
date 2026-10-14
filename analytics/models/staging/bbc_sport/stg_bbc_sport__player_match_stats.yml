@@ -1,0 +1,52 @@
+models:
+  - name: stg_bbc_sport__player_match_stats
+    description: >
+      One row per player per match per statistic. The source is long, and this
+      model keeps it that way; int_player_match_stats__pivoted reshapes it to
+      one row per appearance.
+    data_tests:
+      - unique:
+          column_name: "match_id || '|' || player_id || '|' || stat_name"
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Foreign key.
+        data_tests:
+          - not_null
+      - name: team_id
+        data_tests:
+          - not_null
+      - name: player_id
+        data_tests:
+          - not_null
+      - name: stat_index
+        description: The source's display order for the statistic.
+      - name: stat_name
+        description: Machine name of the statistic, e.g. "minsPlayed".
+        data_tests:
+          - not_null
+          # Guards the pivot in int_player_match_stats__pivoted: a new or
+          # renamed statistic fails here rather than silently going missing.
+          - accepted_values:
+              arguments:
+                values:
+                  - minsPlayed
+                  - goals
+                  - assists
+                  - totalAssists
+                  - shotsTotal
+                  - shotsOnTarget
+                  - shotsSaved
+                  - totalPass
+                  - accuratePassPercentage
+                  - totalTackle
+                  - wonTacklePercentage
+                  - fouls
+                  - wasFouled
+      - name: stat_label
+        description: Human-readable label the source shows, e.g. "Minutes played".
+      - name: stat_value
+        description: >
+          The statistic's value. Numeric across all current statistics, so it is
+          cast to double here rather than left as text.
+        data_tests:
+          - not_null

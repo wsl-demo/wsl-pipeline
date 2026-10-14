@@ -1,0 +1,40 @@
+models:
+  - name: dim_players
+    description: >
+      One row per player, holding attributes only. Counts of appearances and
+      starts belong to fct_player_appearances.
+    columns:
+      - name: player_id
+        description: ID of the player (BBC player URN without its prefix). Primary key.
+        data_tests:
+          - not_null
+          - unique
+      - name: name_first
+      - name: name_last
+      - name: name_shirt
+      - name: display_name
+      - name: shirt_number
+        description: >
+          Shirt worn at the player's most recent appearance. Cast to integer in
+          staging.
+      - name: current_team_id
+        description: Team from the player's most recent appearance.
+        data_tests:
+          - not_null
+      - name: current_team_name
+        description: Full name of current_team_id.
+      - name: most_common_start_position
+        description: >
+          The position the player has started in most often, with ties broken by
+          the most recent start. Null for players who have never started.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - Goalkeeper
+                  - Defender
+                  - Defensive Midfielder
+                  - Wing Back
+                  - Midfielder
+                  - Attacking Midfielder
+                  - Striker

@@ -1,0 +1,114 @@
+models:
+  - name: int_players_joined_to_matches
+    description: >
+      One row per player per match they appeared in, with the match's start time
+      attached. recency_rank = 1 identifies a player's latest appearance.
+    data_tests:
+      - unique:
+          column_name: "match_id || '|' || player_id"
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Foreign key.
+        data_tests:
+          - not_null
+      - name: player_id
+        data_tests:
+          - not_null
+      - name: team_id
+        data_tests:
+          - not_null
+      - name: display_name
+      - name: name_first
+      - name: name_last
+      - name: name_shirt
+      - name: position
+        description: Playing position, null for appearances made as a substitute.
+      - name: shirt_number
+      - name: is_starter
+      - name: is_captain
+      - name: start_date_time
+        description: Scheduled kick-off, carried from stg_bbc_sport__matches.
+        data_tests:
+          - not_null
+      - name: recency_rank
+        description: >
+          1 for a player's most recent appearance, counting up into the past.
+          Ties are broken on match_id so the ordering is deterministic.
+        data_tests:
+          - not_null
+
+  - name: int_players_starts_aggregated_by_position
+    description: >
+      One row per player per position they have started in, with a count of
+      starts. The long-format source for most_common_start_position.
+    data_tests:
+      - unique:
+          column_name: "player_id || '|' || position"
+    columns:
+      - name: player_id
+        data_tests:
+          - not_null
+      - name: position
+        description: Playing position. Never null, since only starts are counted.
+        data_tests:
+          - not_null
+      - name: starts
+        description: Number of matches the player started in this position.
+        data_tests:
+          - not_null
+      - name: last_start_at
+        description: >
+          Kick-off of the most recent start in this position. Used to break ties
+          when two positions have an equal number of starts.
+        data_tests:
+          - not_null
+
+  - name: int_player_match_stats_pivoted
+    description: >
+      Player statistics reshaped from the source's long form to one row per
+      appearance. Measures are nullable because the source is sparse.
+    data_tests:
+      - unique:
+          column_name: "match_id || '|' || player_id"
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Foreign key.
+        data_tests:
+          - not_null
+      - name: player_id
+        data_tests:
+          - not_null
+      - name: team_id
+        data_tests:
+          - not_null
+      - name: minutes_played
+      - name: goals
+      - name: assists
+      - name: chances_created
+      - name: shots_total
+      - name: shots_on_target
+      - name: saves
+        description: Recorded for goalkeepers only.
+      - name: total_passes
+      - name: pass_accuracy_pct
+      - name: total_tackles
+      - name: tackles_won_pct
+      - name: fouls_committed
+      - name: fouls_won
+
+  - name: int_matches_with_points
+    description: >
+      One row per match with the league points earned by the home and away
+      side (3 win, 1 draw, 0 loss), derived from the staged winner.
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: home_points
+        data_tests:
+          - not_null
+      - name: away_points
+        data_tests:
+          - not_null

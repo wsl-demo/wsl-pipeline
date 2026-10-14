@@ -1,0 +1,62 @@
+models:
+  - name: stg_bbc_sport__matches
+    description: One row per match.
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: event_id
+        description: >
+          BBC's match URN without its prefix (BBC calls matches "events"). The
+          source's natural key, kept here only. It differs from match_id, BBC's
+          short ID, which downstream models join on.
+        data_tests:
+          - unique
+          - not_null
+      - name: start_date_time
+        data_tests:
+          - not_null
+      - name: tournament_name
+        data_tests:
+          - not_null
+      - name: tournament_id
+        data_tests:
+          - not_null
+      - name: venue_name
+        data_tests:
+          - not_null
+      - name: venue_id
+        data_tests:
+          - not_null
+      - name: attendance_count
+      # is_regular_season and is_full_time are CASE ... ELSE false, so they are
+      # non-nullable by construction and a not_null test could never fail.
+      - name: is_regular_season
+      - name: is_full_time
+      - name: home_team_id
+        data_tests:
+          - not_null
+      - name: home_score_halftime
+        data_tests:
+          - not_null
+      - name: home_score_fulltime
+        data_tests:
+          - not_null
+      - name: away_team_id
+        data_tests:
+          - not_null
+      - name: away_score_halftime
+        data_tests:
+          - not_null
+      - name: away_score_fulltime
+        data_tests:
+          - not_null
+      - name: winner_side
+        description: Which side won, or `draw`, as reported by the source.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['home', 'away', 'draw']

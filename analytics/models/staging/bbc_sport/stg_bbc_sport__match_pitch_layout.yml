@@ -1,0 +1,31 @@
+models:
+  - name: stg_bbc_sport__match_pitch_layout
+    description: Player's position in the formation at the start of a match.
+    data_tests:
+      # A player is only in 1 position in the starting formation
+      - unique:
+          column_name: "match_id || '|' || player_id"
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Foreign key.
+        data_tests:
+          - not_null
+      - name: source_side
+        description: Which side of the fixture the slot belongs to.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['homeTeam', 'awayTeam']
+      - name: team_id
+        description: ID of the team whose formation this slot belongs to.
+        data_tests:
+          - not_null
+      - name: player_id
+        data_tests:
+          - not_null
+      - name: row_index
+        data_tests:
+          - not_null
+      - name: slot_index
+        data_tests:
+          - not_null

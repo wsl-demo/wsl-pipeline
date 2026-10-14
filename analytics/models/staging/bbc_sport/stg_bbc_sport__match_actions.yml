@@ -1,0 +1,35 @@
+models:
+  - name: stg_bbc_sport__match_actions
+    description: Actions players performed during a match.
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Foreign key.
+        data_tests:
+          - not_null
+      - name: team_id
+        data_tests:
+          - not_null
+      - name: player_id
+        data_tests:
+          - not_null
+      - name: action_index
+      - name: sub_index
+      - name: is_own_goal
+      - name: is_goal
+      - name: is_direct_red
+      - name: is_second_yellow
+      - name: is_penalty
+      - name: regulation_time_minutes
+      - name: injury_time_minutes
+      - name: period
+        description: >
+          1 and 2 are the halves of normal time, 3 and 4 the halves of extra
+          time.
+        data_tests:
+          # `period` is an integer, so the values must not be quoted. Without
+          # quote: false the test compiles to `not in ('1','2','3','4')` and
+          # fails strict static analysis.
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false

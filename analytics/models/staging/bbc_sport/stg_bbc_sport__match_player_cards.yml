@@ -1,0 +1,30 @@
+models:
+  - name: stg_bbc_sport__match_player_cards
+    description: Cards players were given during a match.
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Foreign key.
+        data_tests:
+          - not_null
+      - name: player_id
+        data_tests:
+          - not_null
+      - name: team_id
+        data_tests:
+          - not_null
+      # The three card flags are CASE ... ELSE false, so they are non-nullable
+      # by construction and a not_null test could never fail.
+      - name: is_yellow_card
+      - name: is_second_yellow
+      - name: is_direct_red
+      - name: regulation_time_minutes
+      - name: injury_time_minutes
+      - name: period
+        description: >
+          1 and 2 are the halves of normal time, 3 and 4 the halves of extra
+          time.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4]
+                quote: false

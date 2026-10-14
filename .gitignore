@@ -1,0 +1,22 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# dbt
+analytics/target/
+analytics/dbt_packages/
+analytics/logs/
+*.duckdb
+*.duckdb.wal
+*.user.yml
+
+# local config and logs
+.env
+logs/

@@ -1,0 +1,192 @@
+version: 2
+
+sources:
+  - name: bbc_sport
+    description: Women's Super League match data from BBC Sport
+    schema: raw
+    loader: just setup
+    tables:
+      - name: matches
+        description: One row per match
+        config:
+          loaded_at_field: "cast(source_fetched_at as timestamptz)"
+          freshness:
+            warn_after: {count: 7, period: day}
+            error_after: {count: 14, period: day}
+        columns:
+          - name: source_match_id
+            description: BBC's short match ID. Primary key.
+            data_tests:
+              - unique
+              - not_null
+          - name: urn
+            description: BBC's full match URN; other tables call this `match_urn`.
+            data_tests:
+              - unique
+              - not_null
+          - name: startDateTime
+            description: Timestamp TZ string of scheduled start time.
+            data_tests:
+              - not_null
+          - name: periodLabel_value
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['FT']
+          - name: winner
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['home', 'away', 'draw']
+      - name: match_actions
+        description: One row per action in a match, which maps back to matches table.
+        columns:
+          - name: source_match_id
+            description: Foreign key reference to match ID.
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'matches')
+                    field: source_match_id
+          - name: team_urn
+            description: URN of the acting player's team.
+            data_tests:
+              - not_null
+          - name: actionType
+            description: The unconditioned type of action.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['goal', 'card']
+          - name: type
+            description: The conditioned type of action.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['Goal', 'Own Goal', "Red Card", "Two Yellow Cards", "Penalty", "Yellow Card"]
+      - name: match_officials
+        description: One row per official in a match.
+        columns:
+          - name: source_match_id
+            description: Foreign key reference to match ID.
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'matches')
+                    field: source_match_id
+      - name: match_pitch_layout
+        description: One row per player in the starting XI per team.
+        columns:
+          - name: source_match_id
+            description: Foreign key reference to match ID.
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'matches')
+                    field: source_match_id
+          - name: team_urn
+            description: URN of the player's team.
+            data_tests:
+              - not_null
+          - name: urn
+            description: URN of the player.
+            data_tests:
+              - not_null
+      - name: match_player_cards
+        description: One row per card given to a player during a match.
+        columns:
+          - name: source_match_id
+            description: Foreign key reference to match ID.
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'matches')
+                    field: source_match_id
+          - name: team_urn
+            description: URN of the player's team.
+            data_tests:
+              - not_null
+          - name: playerUrn
+            description: URN of the player.
+            data_tests:
+              - not_null
+          - name: card_index
+            description: Cumulative count of cards the player had already received during that match.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['0', '1']
+          - name: type
+            description: Type of card awarded.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['Yellow Card', 'Red Card', 'Two Yellow Cards']
+      - name: match_players
+        description: One row per player on the roster per match.
+        columns:
+          - name: source_match_id
+            description: Foreign key reference to match ID.
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'matches')
+                    field: source_match_id
+          - name: urn
+            description: URN of the player.
+            data_tests:
+              - not_null
+          - name: source_player_list
+            description: Whether the player on the match-day roster is a starter or substitute.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['starters', 'substitutes']
+      - name: match_teams
+        description: One row per team per match.
+        data_tests:
+          - unique:
+              column_name: "source_match_id || '|' || source_side"
+        columns:
+          - name: source_match_id
+            description: Foreign key reference to match ID.
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'matches')
+                    field: source_match_id
+          - name: source_side
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['homeTeam', 'awayTeam']
+      - name: player_match_stats
+        description: >
+          One row per player per match per statistic, not one row per player per
+          match: the table is long, keyed by dataField.
+        columns:
+          - name: source_match_id
+            description: Foreign key reference to match ID.
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'matches')
+                    field: source_match_id
+      - name: team_match_stats
+        description: >
+          One row per team per match per statistic, not one row per team per
+          match: the table is long, keyed by stat_path.
+        columns:
+          - name: source_match_id
+            description: Foreign key reference to match ID.
+            data_tests:
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'matches')
+                    field: source_match_id
+          - name: stat_measure
+            description: I'm not sure what this is, but let's be warned if it's ever not the observed "total."
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['total']

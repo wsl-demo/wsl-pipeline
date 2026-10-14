@@ -1,0 +1,43 @@
+// Workspace settings deliberately override user-level ones so everyone in this repo
+// sees the same diagnostics. Only *wiring* lives here -- every style value (line
+// length, rule selection, import order, type-checking strictness) is declared in
+// pyproject.toml, which is also what `uv run ruff check .` reads.
+{
+  // Ruff is the only Python linter, formatter and import sorter.
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "always",
+      "source.organizeImports.ruff": "always",
+      // keep Pylance's and isort's own import organiser out of it
+      "source.organizeImports": "never"
+    }
+  },
+
+  // Use the ruff pinned in this repo's dev dependencies, not a globally installed
+  // one, so the IDE and the CLI are the same binary and version.
+  "ruff.importStrategy": "fromEnvironment",
+  "ruff.configuration": "${workspaceFolder}/pyproject.toml",
+  // pyproject.toml wins over any ruff.* settings in the user profile
+  "ruff.configurationPreference": "filesystemFirst",
+  "ruff.nativeServer": "on",
+
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests"],
+
+  // Silence anything else that might lint or reformat Python if it is installed and
+  // enabled in the user profile. Harmless when the extension is absent.
+  "flake8.enabled": false,
+  "pylint.enabled": false,
+  "mypy-type-checker.enabled": false,
+  "autopep8.args": [],
+  "isort.check": false,
+  "python.analysis.fixAll": [],
+
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "editor.rulers": [100]
+}

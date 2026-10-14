@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "ms-python.python",
+    "ms-python.vscode-pylance"
+  ],
+  // These would duplicate or contradict what ruff already does for this repo.
+  "unwantedRecommendations": [
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "ms-python.flake8",
+    "ms-python.pylint",
+    "ms-python.autopep8"
+  ]
+}

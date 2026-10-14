@@ -1,0 +1,78 @@
+models:
+  - name: stg_bbc_sport__match_players
+    description: Team roster for a match. One row per player per match.
+    data_tests:
+      - expression_is_true:
+          arguments:
+            # A starter can't be substituted on
+            expression: "NOT is_starter OR substituted_on_period IS NULL"
+      # A player can only be on the match roster 1 time
+      - unique:
+          column_name: "match_id || '|' || player_id"
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Foreign key.
+        data_tests:
+          - not_null
+      - name: team_id
+        data_tests:
+          - not_null
+      - name: player_id
+        data_tests:
+          - not_null
+      - name: display_name
+      - name: name_first
+      - name: name_last
+      - name: name_shirt
+      - name: position
+        description: >
+          Playing position, for starters only. The source writes 'Substitute'
+          here for everyone on the bench, which is roster status rather than a
+          position, so it is nulled out; use is_starter for that instead.
+        data_tests:
+          # Guards the downstream position aggregation: a renamed or newly
+          # added position fails here instead of silently disappearing.
+          - accepted_values:
+              arguments:
+                values:
+                  - Goalkeeper
+                  - Defender
+                  - Defensive Midfielder
+                  - Wing Back
+                  - Midfielder
+                  - Attacking Midfielder
+                  - Striker
+      - name: shirt_number
+      # is_starter and is_captain are CASE ... ELSE false, so they are
+      # non-nullable by construction and a not_null test could never fail.
+      - name: is_starter
+      - name: is_captain
+      - name: formation_place
+      #
+      # (starter) substituted off
+      - name: substituted_off_reason
+      - name: substituted_off_for_player
+      - name: substituted_off_period
+      - name: substituted_off_minute
+      - name: substituted_off_regulation_time
+      - name: substituted_off_injury_time
+      - name: raw_substituted_off_min_sec
+      - name: substituted_off_time_seconds
+        data_tests:
+          - not_null:
+              config:
+                where: "substituted_off_period is not null"
+      #
+      # (sub) substituted on
+      - name: substituted_on_reason
+      - name: substituted_on_for_player
+      - name: substituted_on_period
+      - name: substituted_on_minute
+      - name: substituted_on_regulation_time
+      - name: substituted_on_injury_time
+      - name: raw_substituted_on_min_sec
+      - name: substituted_on_time_seconds
+        data_tests:
+          - not_null:
+              config:
+                where: "substituted_on_period is not null"

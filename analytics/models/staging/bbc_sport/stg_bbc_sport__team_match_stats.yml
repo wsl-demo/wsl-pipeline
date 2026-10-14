@@ -1,0 +1,35 @@
+models:
+  - name: stg_bbc_sport__team_match_stats
+    description: >
+      One row per team per match per statistic. Kept in the source's long shape;
+      there are 46 distinct statistics, so pivoting is left to whichever
+      downstream model needs a specific subset.
+    data_tests:
+      - unique:
+          column_name: "match_id || '|' || team_id || '|' || stat_name"
+    columns:
+      - name: match_id
+        description: BBC's short match ID. Foreign key.
+        data_tests:
+          - not_null
+      - name: team_id
+        description: ID of the team (BBC team URN without its prefix). Foreign key.
+        data_tests:
+          - not_null
+      - name: alignment
+      - name: stat_name
+        description: Dotted path the source uses to name the statistic.
+        data_tests:
+          - not_null
+      - name: stat_measure
+        description: >
+          Always "total" in the data observed so far. Tested so that a new
+          measure type, such as a per-half breakdown, is noticed rather than
+          silently doubling the grain.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['total']
+      - name: stat_value
+        data_tests:
+          - not_null
