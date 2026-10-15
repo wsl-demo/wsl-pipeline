@@ -1,7 +1,8 @@
 WITH parsed AS (
     SELECT
-        "source_match_id" AS match_id,
+        {{ analytics.strip_urn('"match_urn"', 'event') }} AS match_id,
         {{ analytics.strip_urn('"playerUrn"', 'player') }} AS player_id,
+        {{ analytics.opta_id_from_bbc_id(analytics.strip_urn('"playerUrn"', 'player')) }} AS opta_player_id,
         {{ analytics.strip_urn('"team_urn"', 'team') }} AS team_id,
         CASE WHEN "type" = 'Yellow Card' THEN true ELSE false END AS is_yellow_card,
         CASE WHEN "type" = 'Two Yellow Cards' THEN true ELSE false END AS is_second_yellow,
@@ -13,6 +14,7 @@ WITH parsed AS (
 SELECT
     match_id,
     player_id,
+    opta_player_id,
     team_id,
     is_yellow_card,
     is_second_yellow,

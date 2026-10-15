@@ -1,0 +1,80 @@
+models:
+  - name: matches
+    description: >
+      One row per match, played or scheduled. A match keeps its match_id from
+      fixture to result, so status changes while identity does not. Result
+      columns are null until the match is played.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: match_id
+        data_type: varchar
+        description: "ID of the match: BBC's match URN without its prefix. Primary key."
+        data_tests:
+          - unique
+          - not_null
+      - name: home_opta_team_id
+        data_type: varchar
+        description: Home team. Foreign key to teams.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('teams')
+                field: opta_team_id
+      - name: away_opta_team_id
+        data_type: varchar
+        description: Away team. Foreign key to teams.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('teams')
+                field: opta_team_id
+      - name: match_status
+        data_type: varchar
+        description: "'scheduled' until a result exists, then 'played'."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['scheduled', 'played']
+      - name: season
+        data_type: varchar
+        description: Season the match belongs to, e.g. "2026-2027". A season runs from 1 July to 30 June.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('seasons')
+                field: season
+      - name: winner_side
+        data_type: varchar
+        description: "'home', 'away' or 'draw'. Null until the match is played."
+      - name: tournament_name
+        data_type: varchar
+        description: Null for a scheduled match; the fixtures page does not carry it.
+      - name: venue_name
+        data_type: varchar
+        description: Null for a scheduled match; the fixtures page does not carry it.
+      - name: home_score_fulltime
+        data_type: integer
+        description: Null until the match is played.
+      - name: away_score_fulltime
+        data_type: integer
+        description: Null until the match is played.
+      - name: home_points
+        data_type: integer
+        description: League points the home side earned (3 win, 1 draw, 0 loss). Null until played.
+      - name: away_points
+        data_type: integer
+        description: League points the away side earned (3 win, 1 draw, 0 loss). Null until played.
+      - name: match_date
+        data_type: date
+        description: Calendar date of the match in UK local time.
+        data_tests:
+          - not_null
+      - name: kicked_off_at
+        data_type: timestamp with time zone
+        description: Kickoff. Null for a scheduled match whose time is still TBC.

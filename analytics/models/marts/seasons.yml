@@ -1,0 +1,32 @@
+models:
+  - name: seasons
+    description: >
+      One row per season in the data, from the earliest match to the latest
+      scheduled fixture. A season runs from 1 July to 30 June.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: season
+        data_type: varchar
+        description: Season label, e.g. "2026-2027". Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: team_count
+        data_type: integer
+        description: Number of distinct teams that have a match in the season.
+      - name: matches_total
+        data_type: integer
+        description: Played plus scheduled matches.
+      - name: matches_played
+        data_type: integer
+      - name: is_current
+        data_type: boolean
+        description: True for the latest season present in the data. Exactly one season is current.
+        data_tests:
+          - not_null
+      - name: first_match_date
+        data_type: date
+      - name: last_match_date
+        data_type: date

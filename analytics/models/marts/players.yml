@@ -1,0 +1,45 @@
+models:
+  - name: players
+    description: >
+      One row per player known to either source: names and biography only.
+      Which team a player was in, and when, is `squad_members`. Players in a
+      current squad who have not yet been named in a match are included.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: opta_player_id
+        data_type: varchar
+        description: Opta's player ID, the key both sources share. Primary key.
+        data_tests:
+          - not_null
+          - unique
+      - name: name_first
+        data_type: varchar
+      - name: name_last
+        data_type: varchar
+      - name: name_shirt
+        data_type: varchar
+        description: Name printed on the shirt. Recorded for only some players.
+      - name: display_name
+        data_type: varchar
+        description: Initial and surname, e.g. "A. Russo".
+        data_tests:
+          - not_null
+      - name: nationality
+        data_type: varchar
+        description: >
+          Country name, from wsl_football. Null for players no longer in a
+          current squad, since that source only lists current squads.
+      - name: nationality_iso_code
+        data_type: varchar
+        description: Three-letter country code, e.g. ENG. Not strictly ISO 3166.
+      - name: height_cm
+        data_type: integer
+        description: Centimetres. Sparsely recorded.
+      - name: weight_kg
+        data_type: integer
+        description: Kilograms. Sparsely recorded.
+      - name: birth_date
+        data_type: date
+        description: Null for players with no biography, and for the few the source has no date for.

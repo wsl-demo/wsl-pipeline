@@ -1,0 +1,94 @@
+models:
+  - name: squad_members
+    description: >
+      One row per player per team per season, with biography joined in. Squads
+      are inferred: a player is a member when named in one of the team's
+      matchday squads that season, so a player who never made a matchday squad
+      is not here, and a player who moved mid-season appears for each team.
+      Biography comes from current squad lists, so it is null for players who
+      have since left.
+    config:
+      contract:
+        enforced: true
+    data_tests:
+      - unique:
+          column_name: "season || '|' || opta_team_id || '|' || opta_player_id"
+    columns:
+      - name: opta_player_id
+        data_type: varchar
+        description: Opta's player ID. Foreign key to players.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('players')
+                field: opta_player_id
+      - name: opta_team_id
+        data_type: varchar
+        description: Opta's team ID. Foreign key to teams.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('teams')
+                field: opta_team_id
+      - name: season
+        data_type: varchar
+        description: Season label. Foreign key to seasons.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('seasons')
+                field: season
+      - name: name_first
+        data_type: varchar
+      - name: name_last
+        data_type: varchar
+      - name: display_name
+        data_type: varchar
+      - name: most_common_start_position
+        data_type: varchar
+        description: >
+          Position the player started in most often for this team this season,
+          ties broken by the most recent start. Null if they never started.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - Goalkeeper
+                  - Defender
+                  - Defensive Midfielder
+                  - Wing Back
+                  - Midfielder
+                  - Attacking Midfielder
+                  - Striker
+      - name: nationality
+        data_type: varchar
+      - name: nationality_iso_code
+        data_type: varchar
+      - name: shirt_number
+        data_type: integer
+        description: Shirt worn at the player's latest squad selection for this team this season.
+      - name: matches_in_squad
+        data_type: integer
+        description: Matchday squads the player was named in, bench included.
+        data_tests:
+          - not_null
+      - name: matches_appeared
+        data_type: integer
+        description: Matches the player started or came on in.
+      - name: matches_started
+        data_type: integer
+      - name: height_cm
+        data_type: integer
+      - name: weight_kg
+        data_type: integer
+      - name: birth_date
+        data_type: date
+      - name: first_squad_date
+        data_type: date
+        description: Date of the player's first squad selection for this team this season.
+      - name: last_squad_date
+        data_type: date
+        description: Date of the player's latest squad selection for this team this season.

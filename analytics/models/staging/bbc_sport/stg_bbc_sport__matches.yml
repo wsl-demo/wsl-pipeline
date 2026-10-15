@@ -3,19 +3,14 @@ models:
     description: One row per match.
     columns:
       - name: match_id
-        description: BBC's short match ID. Primary key.
-        data_tests:
-          - unique
-          - not_null
-      - name: event_id
         description: >
-          BBC's match URN without its prefix (BBC calls matches "events"). The
-          source's natural key, kept here only. It differs from match_id, BBC's
-          short ID, which downstream models join on.
+          ID of the match: BBC's match URN without its prefix (BBC calls matches
+          "events"). Known before a match is played, so scheduled fixtures use
+          the same ID. Primary key.
         data_tests:
           - unique
           - not_null
-      - name: start_date_time
+      - name: kicked_off_at
         data_tests:
           - not_null
       - name: tournament_name
@@ -38,6 +33,18 @@ models:
       - name: home_team_id
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_teams')
+                field: team_id
+      - name: home_opta_team_id
+        description: Opta's ID of the home team, which BBC calls its participant ID.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_teams')
+                field: opta_team_id
       - name: home_score_halftime
         data_tests:
           - not_null
@@ -47,6 +54,18 @@ models:
       - name: away_team_id
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_teams')
+                field: team_id
+      - name: away_opta_team_id
+        description: Opta's ID of the away team, which BBC calls its participant ID.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_teams')
+                field: opta_team_id
       - name: away_score_halftime
         data_tests:
           - not_null

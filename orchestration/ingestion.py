@@ -4,22 +4,31 @@ from pathlib import Path
 from dagster import AssetKey, MaterializeResult, asset
 from dagster_duckdb import DuckDBResource
 
-TABLES = [
-    "matches",
-    "match_teams",
-    "match_players",
-    "match_player_cards",
-    "match_officials",
-    "match_pitch_layout",
-    "match_actions",
-    "player_match_stats",
-    "team_match_stats",
-]
+# Each source's raw tables, by the name of the dbt source that declares them.
+# The CSV is `<table>.csv` in WSL_RAW_DIR and lands in the shared `raw` schema,
+# so a table name must be unique across sources.
+SOURCES = {
+    "bbc_sport": [
+        "matches",
+        "match_teams",
+        "match_players",
+        "match_player_cards",
+        "match_officials",
+        "match_pitch_layout",
+        "match_actions",
+        "player_match_stats",
+        "team_match_stats",
+        "fixtures",
+    ],
+    "wsl_football": [
+        "squad_players",
+    ],
+}
 
 
-def build_raw_asset(table: str) -> asset:
+def build_raw_asset(source: str, table: str) -> asset:
     @asset(
-        key=AssetKey(["bbc_sport", table]),
+        key=AssetKey([source, table]),
         group_name="raw_ingestion",
     )
     def _asset(duckdb: DuckDBResource) -> MaterializeResult:
@@ -37,4 +46,8 @@ def build_raw_asset(table: str) -> asset:
     return _asset
 
 
-raw_assets = [build_raw_asset(table) for table in TABLES]
+raw_assets = [
+    build_raw_asset(source, table)
+    for source, tables in SOURCES.items()
+    for table in tables
+]

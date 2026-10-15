@@ -25,11 +25,20 @@ _require-warehouse:
 dagster:
     uv run dagster dev -f orchestration/definitions.py
 
-# Ingest the raw CSVs and build every model (creates the warehouse)
+# Ingest the raw CSVs and build every model (creates the warehouse, publishes nothing)
 [working-directory: '..']
 setup:
     # Refresh dbt's manifest first: Dagster builds its assets from it, and
     # `prepare_if_dev` only re-parses under `dagster dev`, not this command.
+    cd analytics && {{ dbt }} parse
+    uv run dagster asset materialize -f orchestration/definitions.py --select '* and not key:"publish_marts"'
+
+# Ingest, build, test, then copy the finished marts into the app's Postgres.
+# Always the whole graph, never publish alone: Dagster skips the publish step
+# when any dbt test fails, so a red build can't reach the app. Needs the app's
+# Postgres running.
+[working-directory: '..']
+publish:
     cd analytics && {{ dbt }} parse
     uv run dagster asset materialize -f orchestration/definitions.py --select '*'
 

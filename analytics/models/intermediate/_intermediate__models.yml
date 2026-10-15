@@ -1,20 +1,82 @@
 models:
-  - name: int_players_joined_to_matches
+  - name: int_matches_unioned_with_fixtures
     description: >
-      One row per player per match they appeared in, with the match's start time
-      attached. recency_rank = 1 identifies a player's latest appearance.
+      One row per match, played or scheduled, with everything that follows from
+      the match itself: season, status, and the league points each side earned.
+      A match keeps its match_id from fixture to result.
     data_tests:
-      - unique:
-          column_name: "match_id || '|' || player_id"
+      - expression_is_true:
+          arguments:
+            expression: "match_status <> 'played' or (home_points is not null and away_points is not null)"
     columns:
       - name: match_id
-        description: BBC's short match ID. Foreign key.
+        description: ID of the match (BBC match URN without its prefix). Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: home_opta_team_id
         data_tests:
           - not_null
-      - name: player_id
+      - name: away_opta_team_id
         data_tests:
           - not_null
-      - name: team_id
+      - name: match_status
+        description: "'scheduled' until a result exists, then 'played'."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['scheduled', 'played']
+      - name: season
+        description: >
+          Season the match belongs to, e.g. "2026-2027", from the `season_of`
+          macro. A season runs from 1 July to 30 June.
+        data_tests:
+          - not_null
+      - name: winner_side
+        description: "'home', 'away' or 'draw'. Null until the match is played."
+      - name: tournament_name
+        description: Null for a scheduled match; the fixtures page does not carry it.
+      - name: venue_name
+        description: Null for a scheduled match; the fixtures page does not carry it.
+      - name: home_score_fulltime
+      - name: away_score_fulltime
+      - name: home_points
+        description: League points the home side earned (3, 1 or 0). Null until played.
+      - name: away_points
+        description: League points the away side earned (3, 1 or 0). Null until played.
+      - name: match_date
+        description: Calendar date of the match in UK local time.
+        data_tests:
+          - not_null
+      - name: kicked_off_at
+        description: Kickoff. Null for a scheduled match whose time is still TBC.
+
+  - name: int_players_joined_to_matches
+    description: >
+      One row per player named in a match's squad (starters and the whole bench),
+      with the match's date and season attached. recency_rank = 1 is a player's
+      most recent squad selection.
+    data_tests:
+      - unique:
+          column_name: "match_id || '|' || opta_player_id"
+    columns:
+      - name: match_id
+        description: ID of the match (BBC match URN without its prefix). Foreign key.
+        data_tests:
+          - not_null
+      - name: opta_player_id
+        description: >
+          Opta's player ID, shared with wsl_football's squad data. BBC's own
+          player ID stays in staging.
+        data_tests:
+          - not_null
+      - name: opta_team_id
+        description: Opta's ID of the team the player was named for in this match.
+        data_tests:
+          - not_null
+      - name: season
+        description: Season of the match, from the `season_of` macro.
         data_tests:
           - not_null
       - name: display_name
@@ -26,26 +88,39 @@ models:
       - name: shirt_number
       - name: is_starter
       - name: is_captain
-      - name: start_date_time
-        description: Scheduled kick-off, carried from stg_bbc_sport__matches.
+      - name: has_appeared
+        description: >
+          True for starters and for substitutes who came on; false for unused
+          bench. Unused bench are still part of the squad for the match.
+        data_tests:
+          - not_null
+      - name: kicked_off_at
+        description: Kickoff, carried from stg_bbc_sport__matches.
         data_tests:
           - not_null
       - name: recency_rank
         description: >
-          1 for a player's most recent appearance, counting up into the past.
-          Ties are broken on match_id so the ordering is deterministic.
+          1 for the player's latest squad selection. Ties are broken on match_id
+          so the ordering is deterministic.
         data_tests:
           - not_null
 
   - name: int_players_starts_aggregated_by_position
     description: >
-      One row per player per position they have started in, with a count of
-      starts. The long-format source for most_common_start_position.
+      One row per player per position they have started in, for each team in each
+      season, with a count of starts. The long-format source for
+      most_common_start_position.
     data_tests:
       - unique:
-          column_name: "player_id || '|' || position"
+          column_name: "season || '|' || opta_team_id || '|' || opta_player_id || '|' || position"
     columns:
-      - name: player_id
+      - name: season
+        data_tests:
+          - not_null
+      - name: opta_team_id
+        data_tests:
+          - not_null
+      - name: opta_player_id
         data_tests:
           - not_null
       - name: position
@@ -56,7 +131,7 @@ models:
         description: Number of matches the player started in this position.
         data_tests:
           - not_null
-      - name: last_start_at
+      - name: last_started_at
         description: >
           Kick-off of the most recent start in this position. Used to break ties
           when two positions have an equal number of starts.
@@ -69,16 +144,13 @@ models:
       appearance. Measures are nullable because the source is sparse.
     data_tests:
       - unique:
-          column_name: "match_id || '|' || player_id"
+          column_name: "match_id || '|' || opta_player_id"
     columns:
       - name: match_id
-        description: BBC's short match ID. Foreign key.
+        description: ID of the match (BBC match URN without its prefix). Foreign key.
         data_tests:
           - not_null
-      - name: player_id
-        data_tests:
-          - not_null
-      - name: team_id
+      - name: opta_player_id
         data_tests:
           - not_null
       - name: minutes_played
@@ -90,25 +162,8 @@ models:
       - name: saves
         description: Recorded for goalkeepers only.
       - name: total_passes
-      - name: pass_accuracy_pct
+      - name: pass_accuracy_percent
       - name: total_tackles
-      - name: tackles_won_pct
+      - name: tackles_won_percent
       - name: fouls_committed
       - name: fouls_won
-
-  - name: int_matches_with_points
-    description: >
-      One row per match with the league points earned by the home and away
-      side (3 win, 1 draw, 0 loss), derived from the staged winner.
-    columns:
-      - name: match_id
-        description: BBC's short match ID. Primary key.
-        data_tests:
-          - unique
-          - not_null
-      - name: home_points
-        data_tests:
-          - not_null
-      - name: away_points
-        data_tests:
-          - not_null

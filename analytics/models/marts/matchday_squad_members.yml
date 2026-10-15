@@ -1,0 +1,100 @@
+models:
+  - name: matchday_squad_members
+    description: >
+      One row per player per match they were named in the squad for, starters
+      and the whole bench. An unused substitute is part of the squad but did not
+      appear; use has_appeared to count appearances.
+    config:
+      contract:
+        enforced: true
+    data_tests:
+      - unique:
+          column_name: "match_id || '|' || opta_player_id"
+    columns:
+      - name: match_id
+        data_type: varchar
+        description: ID of the match (BBC match URN without its prefix). Foreign key to matches.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('matches')
+                field: match_id
+      - name: opta_player_id
+        data_type: varchar
+        description: Opta's player ID. Foreign key to players.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('players')
+                field: opta_player_id
+      - name: opta_team_id
+        data_type: varchar
+        description: Opta's ID of the team the player was named for. Foreign key to teams.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('teams')
+                field: opta_team_id
+      - name: season
+        data_type: varchar
+        description: Season of the match.
+        data_tests:
+          - not_null
+      - name: position
+        data_type: varchar
+        description: Playing position. Null for appearances made as a substitute.
+      - name: substituted_on_reason
+        data_type: varchar
+      - name: substituted_off_reason
+        data_type: varchar
+      - name: shirt_number
+        data_type: integer
+      - name: substituted_on_minute
+        data_type: integer
+        description: Minute the player came on. Null for starters and unused subs.
+      - name: substituted_off_minute
+        data_type: integer
+        description: >
+          Minute the player was replaced. Null for players who finished the
+          match and for those who never came on.
+      - name: minutes_played
+        data_type: integer
+        description: From the source's minsPlayed statistic. Null where the source did not record it, including unused substitutes.
+      - name: goals
+        data_type: integer
+        description: Null for goalkeepers, whose goals the source does not record. Null means not recorded, not zero.
+      - name: assists
+        data_type: integer
+      - name: chances_created
+        data_type: integer
+      - name: shots_total
+        data_type: integer
+      - name: shots_on_target
+        data_type: integer
+      - name: saves
+        data_type: integer
+        description: Recorded for goalkeepers only.
+      - name: total_passes
+        data_type: integer
+      - name: pass_accuracy_percent
+        data_type: double
+      - name: total_tackles
+        data_type: integer
+      - name: tackles_won_percent
+        data_type: double
+      - name: fouls_committed
+        data_type: integer
+      - name: fouls_won
+        data_type: integer
+      - name: is_starter
+        data_type: boolean
+      - name: is_captain
+        data_type: boolean
+      - name: has_appeared
+        data_type: boolean
+        description: True for starters and substitutes who came on; false for unused bench.
+        data_tests:
+          - not_null

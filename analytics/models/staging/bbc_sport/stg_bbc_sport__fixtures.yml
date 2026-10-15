@@ -1,0 +1,37 @@
+models:
+  - name: stg_bbc_sport__fixtures
+    description: >
+      One row per scheduled match. A match leaves the fixtures page once played,
+      and then appears in stg_bbc_sport__matches under the same match_id.
+    columns:
+      - name: match_id
+        description: >
+          ID of the match: BBC's match URN without its prefix. The same ID the
+          match carries in stg_bbc_sport__matches once played. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: home_opta_team_id
+        description: BBC's opaque ID of the home team.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_teams')
+                field: opta_team_id
+      - name: away_opta_team_id
+        description: BBC's opaque ID of the away team.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_teams')
+                field: opta_team_id
+      - name: match_date
+        description: Calendar date of the match, in UK local time.
+        data_tests:
+          - not_null
+      - name: is_kickoff_time_tbc
+        description: True while BBC has not confirmed a kickoff time.
+      - name: kicked_off_at
+        description: Kickoff as a timestamp, assuming UK local time. Null while the time is TBC.

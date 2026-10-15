@@ -1,0 +1,17 @@
+unit_tests:
+  - name: squad_players_biography_parsing
+    description: >
+      Birth dates arrive in two formats and both become dates; blanks become
+      null rather than failing the integer and date casts.
+    model: stg_wsl_football__squad_players
+    given:
+      - input: source('wsl_football', 'squad_players')
+        rows:
+          - {optaId: "o1", mediaFirstName: "A", mediaLastName: "One", shortName: "A. One", nationality: "England", nationalityIsoCode: "ENG", dateOfBirth: "2006-02-03T00:00:00Z", height: "175", weight: "68", shirtName: "ONE"}
+          - {optaId: "o2", mediaFirstName: "B", mediaLastName: "Two", shortName: "B. Two", nationality: "Germany", nationalityIsoCode: "DEU", dateOfBirth: "2010-09-10", height: "", weight: "", shirtName: ""}
+          - {optaId: "o3", mediaFirstName: "C", mediaLastName: "Three", shortName: "C. Three", nationality: "Japan", nationalityIsoCode: "JPN", dateOfBirth: "", height: "160", weight: ""}
+    expect:
+      rows:
+        - {opta_player_id: "o1", short_name: "A. One", shirt_name: "ONE", birth_date: "2006-02-03", height_cm: 175, weight_kg: 68}
+        - {opta_player_id: "o2", short_name: "B. Two", shirt_name: null, birth_date: "2010-09-10", height_cm: null, weight_kg: null}
+        - {opta_player_id: "o3", short_name: "C. Three", shirt_name: null, birth_date: null, height_cm: 160, weight_kg: null}

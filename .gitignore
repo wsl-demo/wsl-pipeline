@@ -20,3 +20,6 @@ analytics/logs/
 # local config and logs
 .env
 logs/
+
+# Dagster's throwaway instance, created by `dagster dev` when DAGSTER_HOME is unset
+.tmp_dagster_home_*/

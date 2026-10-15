@@ -7,7 +7,7 @@ models:
           column_name: "match_id || '|' || player_id"
     columns:
       - name: match_id
-        description: BBC's short match ID. Foreign key.
+        description: ID of the match (BBC match URN without its prefix). Foreign key.
         data_tests:
           - not_null
       - name: source_side
@@ -20,9 +20,21 @@ models:
         description: ID of the team whose formation this slot belongs to.
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_teams')
+                field: team_id
       - name: player_id
         data_tests:
           - not_null
+      - name: opta_player_id
+        description: "Opta's player ID, which is player_id without its `s-` prefix. Null if the ID is not `s-` prefixed."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_players')
+                field: opta_player_id
       - name: row_index
         data_tests:
           - not_null

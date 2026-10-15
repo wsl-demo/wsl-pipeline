@@ -1,8 +1,9 @@
 WITH parsed AS (
     SELECT
-        "source_match_id" AS match_id,
+        {{ analytics.strip_urn('"match_urn"', 'event') }} AS match_id,
         {{ analytics.strip_urn('"team_urn"', 'team') }} AS team_id,
         {{ analytics.strip_urn('"playerUrn"', 'player') }} AS player_id,
+        {{ analytics.opta_id_from_bbc_id(analytics.strip_urn('"playerUrn"', 'player')) }} AS opta_player_id,
         CAST("action_index" AS integer) AS action_index,
         CAST("sub_index" AS integer) AS sub_index,
         CASE WHEN "type" = 'Own Goal' THEN true ELSE false END AS is_own_goal,
@@ -18,6 +19,7 @@ SELECT
     match_id,
     team_id,
     player_id,
+    opta_player_id,
     action_index,
     sub_index,
     is_own_goal,

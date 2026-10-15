@@ -1,0 +1,32 @@
+models:
+  - name: teams
+    description: >
+      One row per team, holding attributes only, taken from the team's most
+      recent match. Includes clubs no longer in the league; which teams played in
+      a season is in `matches` and `squad_members`.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: opta_team_id
+        data_type: varchar
+        description: >
+          Opta's team ID, which BBC calls the participant ID. The key teams
+          carry throughout the marts. Primary key.
+        data_tests:
+          - not_null
+          - unique
+      - name: team_code
+        data_type: varchar
+        description: Three-letter abbreviation, e.g. "ARS".
+        data_tests:
+          - not_null
+          - unique
+      - name: team_name
+        data_type: varchar
+        description: Full team name.
+        data_tests:
+          - not_null
+      - name: team_short_name
+        data_type: varchar
+        description: Short name for tight spaces, e.g. "Man Utd".

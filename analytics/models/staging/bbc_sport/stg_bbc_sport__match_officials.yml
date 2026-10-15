@@ -7,7 +7,7 @@ models:
           column_name: "match_id || '|' || official_id"
     columns:
       - name: match_id
-        description: BBC's short match ID. Foreign key.
+        description: ID of the match (BBC match URN without its prefix). Foreign key.
         data_tests:
           - not_null
       - name: official_id

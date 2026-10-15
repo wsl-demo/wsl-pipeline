@@ -9,15 +9,27 @@ models:
           column_name: "match_id || '|' || player_id || '|' || stat_name"
     columns:
       - name: match_id
-        description: BBC's short match ID. Foreign key.
+        description: ID of the match (BBC match URN without its prefix). Foreign key.
         data_tests:
           - not_null
       - name: team_id
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_teams')
+                field: team_id
       - name: player_id
         data_tests:
           - not_null
+      - name: opta_player_id
+        description: "Opta's player ID, which is player_id without its `s-` prefix. Null if the ID is not `s-` prefixed."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_players')
+                field: opta_player_id
       - name: stat_index
         description: The source's display order for the statistic.
       - name: stat_name
@@ -42,6 +54,8 @@ models:
                   - wonTacklePercentage
                   - fouls
                   - wasFouled
+                  - penaltySave
+                  - penaltyMiss
       - name: stat_label
         description: Human-readable label the source shows, e.g. "Minutes played".
       - name: stat_value

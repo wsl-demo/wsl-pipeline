@@ -1,0 +1,76 @@
+# Small, fixed inputs for the logic that is easy to get subtly wrong: the match
+# clock, period boundaries, URN prefixes and fixture dates. The real data only
+# exercises the cases it happens to contain; these pin the edges.
+unit_tests:
+  - name: match_actions_clock_and_period
+    description: >
+      Regulation minute, added time and period come out right at each period's
+      boundary, and a minute past extra time gets no period instead of the last.
+    model: stg_bbc_sport__match_actions
+    given:
+      - input: source('bbc_sport', 'match_actions')
+        rows:
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", action_index: "1", timeLabel_value: "12'"}
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", action_index: "2", timeLabel_value: "45'"}
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", action_index: "3", timeLabel_value: "45'+2"}
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", action_index: "4", timeLabel_value: "46'"}
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", action_index: "5", timeLabel_value: "90'+5"}
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", action_index: "6", timeLabel_value: "105'+1"}
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", action_index: "7", timeLabel_value: "120'"}
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", action_index: "8", timeLabel_value: "121'"}
+    expect:
+      rows:
+        - {action_index: 1, regulation_time_minutes: 12, injury_time_minutes: 0, period: 1}
+        - {action_index: 2, regulation_time_minutes: 45, injury_time_minutes: 0, period: 1}
+        - {action_index: 3, regulation_time_minutes: 45, injury_time_minutes: 2, period: 1}
+        - {action_index: 4, regulation_time_minutes: 46, injury_time_minutes: 0, period: 2}
+        - {action_index: 5, regulation_time_minutes: 90, injury_time_minutes: 5, period: 2}
+        - {action_index: 6, regulation_time_minutes: 105, injury_time_minutes: 1, period: 3}
+        - {action_index: 7, regulation_time_minutes: 120, injury_time_minutes: 0, period: 4}
+        - {action_index: 8, regulation_time_minutes: 121, injury_time_minutes: 0, period: null}
+
+  - name: match_players_substitutions_and_urns
+    description: >
+      Substitution clock is converted to the minute being played and split into
+      regulation and added time; URN prefixes are stripped and unknown prefixes
+      are left visible; the bench placeholder position becomes null.
+    model: stg_bbc_sport__match_players
+    given:
+      - input: source('bbc_sport', 'match_players')
+        rows:
+          # starter taken off in the 68th minute of the second half
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", team_urn: "urn:bbc:sportsdata:football:team:arsenal-ladies", urn: "urn:bbc:sportsdata:football:player:s-p1", source_player_list: "starters", position: "Striker", substitutedOff_periodId: "2", substitutedOff_timeMinSec: "67:30"}
+          # taken off in first-half added time
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", team_urn: "urn:bbc:sportsdata:football:team:arsenal-ladies", urn: "urn:bbc:sportsdata:football:player:s-p2", source_player_list: "starters", position: "Defender", substitutedOff_periodId: "1", substitutedOff_timeMinSec: "46:10"}
+          # unused substitute, and a URN with a prefix the macro does not know
+          - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", team_urn: "urn:bbc:sportsdata:football:team:arsenal-ladies", urn: "urn:other:player:s-p3", source_player_list: "substitutes", position: "Substitute"}
+    expect:
+      rows:
+        - {match_id: "s-m1", team_id: "arsenal-ladies", player_id: "s-p1", opta_player_id: "p1", is_starter: true, position: "Striker", substituted_off_minute: 68, substituted_off_regulation_time: 68, substituted_off_injury_time: 0, substituted_off_time_seconds: 4050}
+        - {match_id: "s-m1", team_id: "arsenal-ladies", player_id: "s-p2", opta_player_id: "p2", is_starter: true, position: "Defender", substituted_off_minute: 47, substituted_off_regulation_time: 45, substituted_off_injury_time: 2, substituted_off_time_seconds: 2770}
+        - {match_id: "s-m1", team_id: "arsenal-ladies", player_id: "urn:other:player:s-p3", is_starter: false, position: null, substituted_off_minute: null, substituted_off_regulation_time: null, substituted_off_injury_time: null}
+
+  - name: fixtures_dates_and_kickoff
+    description: >
+      The date is rebuilt from `month` plus the day number (ordinal suffixes of
+      every kind), kickoff is read as UK local time across the daylight-saving
+      change, and TBC kickoffs become null rather than failing.
+    model: stg_bbc_sport__fixtures
+    given:
+      - input: source('bbc_sport', 'fixtures')
+        rows:
+          # British Summer Time: 14:00 local is 13:00 UTC
+          - {month: "2026-10", event_id: "urn:bbc:sportsdata:football:event:s-f1", date_heading: "Sunday 18th October", kickoff_time: "14:00", home_participant_id: "h", away_participant_id: "a"}
+          # winter: local equals UTC; and the 1st, 2nd, 3rd, 22nd suffixes
+          - {month: "2026-11", event_id: "urn:bbc:sportsdata:football:event:s-f2", date_heading: "Sunday 1st November", kickoff_time: "12:00", home_participant_id: "h", away_participant_id: "a"}
+          - {month: "2027-01", event_id: "urn:bbc:sportsdata:football:event:s-f3", date_heading: "Saturday 2nd January", kickoff_time: "12:30", home_participant_id: "h", away_participant_id: "a"}
+          - {month: "2027-05", event_id: "urn:bbc:sportsdata:football:event:s-f4", date_heading: "Sunday 3rd May", kickoff_time: "13:00", home_participant_id: "h", away_participant_id: "a"}
+          # kickoff not yet confirmed
+          - {month: "2027-05", event_id: "urn:bbc:sportsdata:football:event:s-f5", date_heading: "Saturday 22nd May", kickoff_time: "TBC", home_participant_id: "h", away_participant_id: "a"}
+    expect:
+      rows:
+        - {match_id: "s-f1", match_date: "2026-10-18", is_kickoff_time_tbc: false, kicked_off_at: "2026-10-18 13:00:00+00:00"}
+        - {match_id: "s-f2", match_date: "2026-11-01", is_kickoff_time_tbc: false, kicked_off_at: "2026-11-01 12:00:00+00:00"}
+        - {match_id: "s-f3", match_date: "2027-01-02", is_kickoff_time_tbc: false, kicked_off_at: "2027-01-02 12:30:00+00:00"}
+        - {match_id: "s-f4", match_date: "2027-05-03", is_kickoff_time_tbc: false, kicked_off_at: "2027-05-03 12:00:00+00:00"}
+        - {match_id: "s-f5", match_date: "2027-05-22", is_kickoff_time_tbc: true, kicked_off_at: null}

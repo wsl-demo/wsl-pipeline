@@ -1,0 +1,41 @@
+unit_tests:
+  - name: player_stats_pivot_types
+    description: >
+      Counts come out as integers and percentages keep their decimals, and
+      an appearance with a missing statistic gets null rather than zero.
+    model: int_player_match_stats_pivoted
+    given:
+      - input: ref('stg_bbc_sport__player_match_stats')
+        rows:
+          - {match_id: "m1", opta_player_id: "p1", stat_name: "goals", stat_value: 2.0}
+          - {match_id: "m1", opta_player_id: "p1", stat_name: "minsPlayed", stat_value: 90.0}
+          - {match_id: "m1", opta_player_id: "p1", stat_name: "accuratePassPercentage", stat_value: 87.5}
+          - {match_id: "m1", opta_player_id: "p2", stat_name: "totalPass", stat_value: 31.0}
+    expect:
+      rows:
+        - {match_id: "m1", opta_player_id: "p1", goals: 2, minutes_played: 90, pass_accuracy_percent: 87.5, total_passes: null}
+        - {match_id: "m1", opta_player_id: "p2", goals: null, minutes_played: null, pass_accuracy_percent: null, total_passes: 31}
+
+  - name: matches_season_status_and_points
+    description: >
+      Season follows the UK date of the match with a 1 July boundary (a kickoff
+      at 23:30 UTC on 30 June is already 1 July in London), points follow the
+      winner, scheduled matches have no points, and a fixture that has been
+      played appears once, as the result.
+    model: int_matches_unioned_with_fixtures
+    given:
+      - input: ref('stg_bbc_sport__matches')
+        rows:
+          - {match_id: "m1", kicked_off_at: "2026-05-16 14:00:00+00:00", home_opta_team_id: "a", away_opta_team_id: "b", winner_side: "home"}
+          - {match_id: "m2", kicked_off_at: "2026-06-30 23:30:00+00:00", home_opta_team_id: "a", away_opta_team_id: "b", winner_side: "draw"}
+          - {match_id: "m3", kicked_off_at: "2027-01-15 12:00:00+00:00", home_opta_team_id: "a", away_opta_team_id: "b", winner_side: "away"}
+      - input: ref('stg_bbc_sport__fixtures')
+        rows:
+          - {match_id: "m1", match_date: "2026-05-16", kicked_off_at: "2026-05-16 14:00:00+00:00", home_opta_team_id: "a", away_opta_team_id: "b"}
+          - {match_id: "f1", match_date: "2027-03-01", kicked_off_at: "2027-03-01 15:00:00+00:00", home_opta_team_id: "a", away_opta_team_id: "b"}
+    expect:
+      rows:
+        - {match_id: "m1", match_status: "played", season: "2025-2026", match_date: "2026-05-16", home_points: 3, away_points: 0}
+        - {match_id: "m2", match_status: "played", season: "2026-2027", match_date: "2026-07-01", home_points: 1, away_points: 1}
+        - {match_id: "m3", match_status: "played", season: "2026-2027", match_date: "2027-01-15", home_points: 0, away_points: 3}
+        - {match_id: "f1", match_status: "scheduled", season: "2026-2027", match_date: "2027-03-01", home_points: null, away_points: null}
