@@ -1,0 +1,67 @@
+# Publishes the dbt docs site to GitHub Pages. The raw CSVs live in a private
+# repo, so the site is generated against an empty warehouse.
+# Column types and lineage therefore come only from what the YAML declares: a
+# source whose columns are listed with `data_type` and `schema_origin: local`
+# gets full lineage, and the rest are published without it.
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push replaces a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_NAME: ci.duckdb
+      WSL_RAW_DIR: unused
+    steps:
+      - uses: actions/checkout@v4
+
+      # uv reads the Python version from .python-version.
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # Same two steps as `just docs`: `docs generate` rejects
+      # --static-analysis, so compile first and have it reuse that compile.
+      - name: Generate docs
+        working-directory: analytics
+        run: |
+          ../.venv/bin/dbt compile --static-analysis strict --generate-info-schema
+          ../.venv/bin/dbt docs generate --no-compile
+
+      # Only the site itself. The rest of target/ (manifest.json, compiled SQL)
+      # isn't needed and carries the runner's file paths.
+      - name: Assemble site
+        run: |
+          mkdir _site
+          cp -R analytics/target/index.html analytics/target/assets analytics/target/info_schema _site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
