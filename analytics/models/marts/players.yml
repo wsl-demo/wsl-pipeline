@@ -4,42 +4,44 @@ models:
       One row per player known to either source: names and biography only.
       Which team a player was in, and when, is `squad_members`. Players in a
       current squad who have not yet been named in a match are included.
+      Names are BBC's, from the player's latest matchday squad, or
+      wsl_football's for a player not yet named in one.
     config:
       contract:
         enforced: true
     columns:
       - name: opta_player_id
         data_type: varchar
-        description: "{{ doc('opta_player_id') }} Primary key."
+        description: "{{ doc('opta_player_id') }}"
         data_tests:
           - not_null
           - unique
       - name: name_first
         data_type: varchar
-        description: BBC's, from the player's latest matchday squad; wsl_football's for a player not yet named in one.
+        description: "{{ doc('name_first') }}"
       - name: name_last
         data_type: varchar
-        description: BBC's, from the player's latest matchday squad; wsl_football's for a player not yet named in one.
+        description: "{{ doc('name_last') }}"
       - name: name_shirt
         data_type: varchar
-        description: Name printed on the shirt. Recorded for only some players.
+        description: "{{ doc('name_shirt') }}"
       - name: display_name
         data_type: varchar
-        description: Initial and surname, e.g. "A. Russo".
+        description: "{{ doc('display_name') }}"
         data_tests:
           - not_null
       - name: nationality
         data_type: varchar
-        description: "{{ doc('nationality') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('nationality') }}"
       - name: nationality_iso_code
         data_type: varchar
-        description: "{{ doc('nationality_iso_code') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('nationality_iso_code') }}"
       - name: height_cm
         data_type: integer
-        description: "{{ doc('height_cm') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('height_cm') }}"
       - name: weight_kg
         data_type: integer
-        description: "{{ doc('weight_kg') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('weight_kg') }}"
       - name: birth_date
         data_type: date
-        description: "{{ doc('birth_date') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('birth_date') }}"

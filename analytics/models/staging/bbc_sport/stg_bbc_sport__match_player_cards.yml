@@ -26,11 +26,11 @@ models:
       `stg_bbc_sport__match_actions`.
     columns:
       - name: bbc_match_id
-        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_match_id') }}"
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -38,7 +38,7 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: bbc_player_id
-        description: "{{ doc('bbc_player_id') }} From raw `playerUrn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_player_id') }}"
         data_tests:
           - not_null
       - name: opta_player_id
@@ -50,7 +50,7 @@ models:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: bbc_team_id
-        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`. The card's recipient's team."
+        description: "{{ doc('bbc_team_id') }} The carded player's team."
         data_tests:
           - not_null
           - relationships:
@@ -60,17 +60,17 @@ models:
       # The three card flags are CASE ... ELSE false, so they are non-nullable
       # by construction and a not_null test could never fail.
       - name: is_yellow_card
-        description: True when raw `type` is `Yellow Card`, a booking that did not by itself send the player off.
+        description: "True for a booking that did not by itself send the player off."
       - name: is_second_yellow
-        description: True when raw `type` is `Two Yellow Cards`, the second booking that sends a player off.
+        description: "True for a second booking, which sends the player off."
       - name: is_direct_red
-        description: True when raw `type` is `Red Card`, a straight red.
+        description: "True for a straight red card."
       - name: regulation_time_minutes
-        description: "{{ doc('regulation_time_minutes') }}"
+        description: "The regulation match minute the event happened in: the number before the `'` in raw `timeLabel_value`, so `90'+4` gives 90."
       - name: injury_time_minutes
-        description: "{{ doc('injury_time_minutes') }}"
+        description: "Minutes into added time: the number after the `+` in raw `timeLabel_value`, so `90'+4` gives 4. Zero when there is no `+`."
       - name: period
-        description: "{{ doc('match_period') }}"
+        description: "Which part of the match the event belongs to, worked out from `regulation_time_minutes`: 1 for minutes 1–45, 2 for 46–90, 3 for 91–105 and 4 for 106–120 (3 and 4 are the halves of extra time). Added time belongs to the period it extends, so `45'+2` is period 1. Null past minute 120."
         data_tests:
           - accepted_values:
               arguments:

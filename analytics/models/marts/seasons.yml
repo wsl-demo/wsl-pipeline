@@ -9,7 +9,7 @@ models:
     columns:
       - name: season
         data_type: varchar
-        description: "{{ doc('season') }} Primary key."
+        description: "{{ doc('season') }}"
         data_tests:
           - unique
           - not_null

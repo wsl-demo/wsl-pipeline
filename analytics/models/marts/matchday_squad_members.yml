@@ -65,7 +65,7 @@ models:
     columns:
       - name: opta_match_id
         data_type: varchar
-        description: "{{ doc('opta_match_id') }} Foreign key to matches."
+        description: "{{ doc('opta_match_id') }}"
         entity: foreign
         data_tests:
           - not_null
@@ -75,7 +75,7 @@ models:
                 field: opta_match_id
       - name: opta_player_id
         data_type: varchar
-        description: "{{ doc('opta_player_id') }} Foreign key to players."
+        description: "{{ doc('opta_player_id') }}"
         entity: foreign
         data_tests:
           - not_null
@@ -85,7 +85,7 @@ models:
                 field: opta_player_id
       - name: opta_team_id
         data_type: varchar
-        description: "{{ doc('opta_team_id') }} The team the player was named for. Foreign key to teams."
+        description: "{{ doc('opta_team_id') }} The team the player was named for in the match."
         entity: foreign
         data_tests:
           - not_null
@@ -95,7 +95,7 @@ models:
                 field: opta_team_id
       - name: match_date
         data_type: date
-        description: Calendar date of the match in UK local time.
+        description: "{{ doc('match_date') }}"
         granularity: day
         dimension: time
         data_tests:
@@ -108,75 +108,73 @@ models:
           - not_null
       - name: position
         data_type: varchar
-        description: Playing position. Null for appearances made as a substitute.
+        description: "{{ doc('position') }}"
         dimension: categorical
       - name: substituted_on_reason
         data_type: varchar
-        description: "`Tactical` or `Injury`: why the player this one replaced was taken off. Null if the player didn't come on."
+        description: "{{ doc('substituted_on_reason') }}"
       - name: substituted_off_reason
         data_type: varchar
-        description: "`Tactical` or `Injury`. Null if the player wasn't taken off."
+        description: "{{ doc('substituted_off_reason') }}"
       - name: shirt_number
         data_type: integer
-        description: Shirt number worn in this match.
+        description: "{{ doc('shirt_number') }}"
       - name: substituted_on_minute
         data_type: integer
-        description: Minute the player came on. Null for starters and unused subs.
+        description: "The minute being played when the player came on, counted from kickoff, so `63:57` on the match clock is the 64th minute. Null if they didn't come on."
       - name: substituted_off_minute
         data_type: integer
-        description: >
-          Minute the player was replaced. Null for players who finished the
-          match and for those who never came on.
+        description: "The minute being played when the player was taken off, counted from kickoff, so `63:57` on the match clock is the 64th minute and `45:00` the 46th. Null if they weren't taken off."
       - name: minutes_played
         data_type: integer
-        description: "{{ doc('minutes_played') }}"
+        description: "Minutes the player was on the pitch, from BBC's `minsPlayed`. Never more than 90, so added time is not counted. Null for an unused substitute."
       - name: goals
         data_type: integer
-        description: "{{ doc('goals') }}"
+        description: "Goals the player scored, from BBC's `goals`. Penalties count and own goals do not. Null for a starting goalkeeper."
       - name: assists
         data_type: integer
-        description: "{{ doc('assists') }}"
+        description: "Assists, from BBC's `assists`. Null for a starting goalkeeper."
       - name: chances_created
         data_type: integer
-        description: "{{ doc('chances_created') }}"
+        description: "From BBC's `totalAssists`, which BBC labels \"Chances created\"; the column follows the label. Never lower than `assists`, so assists count as chances created. Null for a starting goalkeeper."
       - name: shots_total
         data_type: integer
-        description: "{{ doc('shots_total') }}"
+        description: "Shots, on and off target, from BBC's `shotsTotal`. Null for a starting goalkeeper."
       - name: shots_on_target
         data_type: integer
-        description: "{{ doc('shots_on_target') }}"
+        description: "Shots on target, from BBC's `shotsOnTarget`. Never more than `shots_total`. Null for a starting goalkeeper."
       - name: saves
         data_type: integer
-        description: "{{ doc('saves') }}"
+        description: "Shots saved, from BBC's `shotsSaved`. Recorded only for starting goalkeepers; null for everyone else."
       - name: total_passes
         data_type: integer
-        description: "{{ doc('total_passes') }}"
+        description: "Passes, from BBC's `totalPass`."
       - name: pass_accuracy_percent
         data_type: double
-        description: "{{ doc('pass_accuracy_percent') }}"
+        description: "Share of the player's passes BBC counts as accurate, from 0 to 100, from BBC's `accuratePassPercentage`."
       - name: total_tackles
         data_type: integer
-        description: "{{ doc('total_tackles') }}"
+        description: "Tackles, from BBC's `totalTackle`. Null for most starting goalkeepers."
       - name: tackles_won_percent
         data_type: double
-        description: "{{ doc('tackles_won_percent') }}"
+        description: "Share of the player's tackles won, from 0 to 100, from BBC's `wonTacklePercentage`. Null for most starting goalkeepers."
       - name: fouls_committed
         data_type: integer
-        description: "{{ doc('fouls_committed') }}"
+        description: "Fouls the player committed, from BBC's `fouls`."
       - name: fouls_won
         data_type: integer
-        description: "{{ doc('fouls_won') }}"
+        description: "Times the player was fouled, from BBC's `wasFouled`."
       - name: is_starter
         data_type: boolean
-        description: True for the starting eleven; false for the bench.
+        description: "{{ doc('is_starter') }}"
         dimension: categorical
       - name: is_captain
         data_type: boolean
-        description: True for the team's captain in this match.
+        description: "{{ doc('is_captain') }}"
         dimension: categorical
       - name: has_appeared
         data_type: boolean
-        description: True for starters and substitutes who came on; false for unused bench.
+        description: "True for starters and for substitutes who came on; false for the unused bench, who are still part of the matchday squad."
         data_tests:
           - not_null
 

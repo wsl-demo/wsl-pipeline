@@ -24,29 +24,27 @@ sources:
         columns:
           - name: optaId
             data_type: varchar
-            description: >
-              Opta's player ID. BBC Sport uses the same ID with an `s-` prefix.
-              Primary key.
+            description: "{{ doc('opta_player_id') }}"
             data_tests:
               - unique
               - not_null
           - name: mediaFirstName
             data_type: varchar
-            description: The player's first name.
+            description: "{{ doc('name_first') }}"
           - name: mediaLastName
             data_type: varchar
-            description: The player's last name.
+            description: "{{ doc('name_last') }}"
           - name: shortName
             data_type: varchar
-            description: The player's name abbreviated, e.g. "F. Kirby".
+            description: "{{ doc('display_name') }}"
           - name: nationality
             data_type: varchar
-            description: The country the player represents, e.g. "England".
+            description: "{{ doc('nationality') }}"
             data_tests:
               - not_null
           - name: nationalityIsoCode
             data_type: varchar
-            description: Three-letter country code, e.g. ENG, DEU. Not strictly ISO.
+            description: "{{ doc('nationality_iso_code') }}"
             data_tests:
               - not_null
           - name: dateOfBirth
@@ -56,13 +54,13 @@ sources:
               depending on the player. Missing for a few players.
           - name: height
             data_type: varchar
-            description: Height as a bare number, e.g. `173`; centimetres, judging by the values. Empty for about a third of players.
+            description: "{{ doc('height_cm') }}"
           - name: weight
             data_type: varchar
-            description: Weight as a bare number, e.g. `58`; kilograms, judging by the values. Empty for about half of players.
+            description: "{{ doc('weight_kg') }}"
           - name: shirtName
             data_type: varchar
-            description: The name the player is known by, e.g. "Mapi León", "Misa". Present for only 10 players; empty for the rest.
+            description: "{{ doc('name_shirt') }}"
           - name: source_fetched_at
             data_type: varchar
-            description: When the scraper fetched the squad page, as an ISO timestamp. This source's `loaded_at_field`.
+            description: "When the page was fetched, as an ISO timestamp. The source's `loaded_at_field`."

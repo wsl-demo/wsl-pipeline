@@ -32,86 +32,61 @@ models:
         `lastUpdatedString`, `seoTimestamps_*`, `mediaHeaderData_*`, `type`,
         `sportDiscipline`, `venue_shortName`, `tournament_thingsGuid`, and
         `groupedActions` (a JSON summary of the page's goals and assists).
-      - Scrape metadata: `source_month`, `source_fetched_at`, `source_file`.
+      - Providence metadata: `source_month`, `source_fetched_at`, `source_file`.
     columns:
       - name: bbc_match_id
-        description: "{{ doc('bbc_match_id') }} From raw `urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_match_id') }}"
         data_tests:
           - unique
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Primary key."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - unique
           - not_null
       - name: bbc_match_page_id
-        description: >
-          BBC's match page slug (e.g. `c040m05309zt`). From raw
-          `source_match_id`, as sent. Exists only once a match has been played,
-          so fixtures don't have it. Kept for tracing a row back to its BBC
-          page; not used downstream.
+        description: "{{ doc('bbc_match_page_id') }}"
         data_tests:
           - unique
           - not_null
       - name: kicked_off_at
-        description: >
-          Kickoff, as an absolute timestamp. Built from the date and time the
-          match page displays: raw `date` (`Sat 21 Oct 2023`) and
-          `time_displayTimeUK` (`12:30`), read as UK local time by the
-          `uk_local_timestamp` macro, as fixtures are.
-
-
-          Raw `startDateTime` is not used. For 66 of 431 matches it held a
-          different time, sometimes days out (a whole round in October 2023
-          was set to Sunday 14:00). In every one of the 66, the kickoff implied
-          by the substitution timestamps agreed with the displayed time, and so
-          did Opta's feed for the one it covers.
-          `kickoffs_agree_with_substitution_clock` keeps checking this.
+        description: "{{ doc('kicked_off_at') }}"
         data_tests:
           - not_null
       - name: tournament_name
-        description: "Competition name, e.g. \"Women's Super League\". From raw `tournament_disambiguatedName`, as sent."
+        description: "{{ doc('tournament_name') }}"
         data_tests:
           - not_null
       - name: bbc_tournament_id
-        description: "BBC's tournament ID: a slug, `womens-super-league`. Not an Opta ID. From raw `tournament_urn`, with the `urn:bbc:sportsdata:football:tournament:` prefix removed by `strip_urn`."
+        description: "BBC's tournament ID: a slug, `womens-super-league`. It does not contain Opta's ID, so Opta's competition ID cannot be derived from it."
         data_tests:
           - not_null
       - name: opta_tournament_id
-        description: Opta's competition ID (`6vq8j5p3av14nr3iuyi4okhjt` for the WSL). From raw `tournament_id`, as sent.
+        description: "{{ doc('opta_tournament_id') }}"
         data_tests:
           - not_null
       - name: opta_stage_id
-        description: >
-          Opta's stage ID. Each season's league is one "Regular Season" stage,
-          so it identifies the season in Opta's terms. From raw `stage_id`, as
-          sent.
+        description: "Opta's stage ID. Each season's league is one \"Regular Season\" stage, so it identifies the season in Opta's terms."
         data_tests:
           - not_null
       - name: venue_name
-        description: >
-          Stadium name as BBC showed it for this match. From raw `venue_name`,
-          as sent. A venue can appear under more than one name over time
-          (three venues do), so group by `bbc_venue_id`, not by name.
+        description: "{{ doc('venue_name') }} Group by `bbc_venue_id`, not by name."
         data_tests:
           - not_null
       - name: bbc_venue_id
-        description: >
-          BBC's venue ID: `s-` followed by an ID that is probably Opta's but
-          unconfirmed. From raw `venue_urn`, with the
-          `urn:bbc:sportsdata:football:venue:` prefix removed by `strip_urn`.
+        description: "BBC's venue ID: `s-` followed by an ID that is probably Opta's but unconfirmed."
         data_tests:
           - not_null
       - name: attendance_count
-        description: Crowd size. From raw `attendance_value`, cast to integer. Null for the 3 matches BBC gives no attendance for.
+        description: "Crowd size, e.g. `3302`. Missing for 3 matches."
       # is_regular_season and is_full_time are CASE ... ELSE false, so they are
       # non-nullable by construction and a not_null test could never fail.
       - name: is_regular_season
-        description: True when raw `stage_name` is `Regular Season`, which it is for every match so far.
+        description: "True for a match in Opta's \"Regular Season\" stage, which every match so far is."
       - name: is_full_time
-        description: True when raw `periodLabel_value` is `FT`, which it is for every match so far (BBC's results pages only list finished matches).
+        description: "True when BBC labels the score full time (`FT`), which it does for every match so far: its results pages list only finished matches."
       - name: bbc_home_team_id
-        description: "{{ doc('bbc_team_id') }} The home team. From raw `home_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_team_id') }} The home team."
         data_tests:
           - not_null
           - relationships:
@@ -119,7 +94,7 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: opta_home_team_id
-        description: "{{ doc('opta_team_id') }} The home team. From raw `home_id`, as sent."
+        description: "{{ doc('opta_team_id') }} The home team."
         data_tests:
           - not_null
           - relationships:
@@ -127,15 +102,15 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: opta_team_id
       - name: home_score_halftime
-        description: Home goals at half-time. From raw `home_runningScores_halftime`, cast to integer.
+        description: "{{ doc('score_halftime') }} The home team."
         data_tests:
           - not_null
       - name: home_score_fulltime
-        description: Home goals at full time, own goals included. From raw `home_runningScores_fulltime`, cast to integer.
+        description: "{{ doc('score_fulltime') }} The home team."
         data_tests:
           - not_null
       - name: bbc_away_team_id
-        description: "{{ doc('bbc_team_id') }} The away team. From raw `away_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_team_id') }} The away team."
         data_tests:
           - not_null
           - relationships:
@@ -143,7 +118,7 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: opta_away_team_id
-        description: "{{ doc('opta_team_id') }} The away team. From raw `away_id`, as sent."
+        description: "{{ doc('opta_team_id') }} The away team."
         data_tests:
           - not_null
           - relationships:
@@ -151,15 +126,15 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: opta_team_id
       - name: away_score_halftime
-        description: Away goals at half-time. From raw `away_runningScores_halftime`, cast to integer.
+        description: "{{ doc('score_halftime') }} The away team."
         data_tests:
           - not_null
       - name: away_score_fulltime
-        description: Away goals at full time, own goals included. From raw `away_runningScores_fulltime`, cast to integer.
+        description: "{{ doc('score_fulltime') }} The away team."
         data_tests:
           - not_null
       - name: winner_side
-        description: "Which side won, or `draw`. From raw `winner`, as sent."
+        description: "{{ doc('winner_side') }}"
         data_tests:
           - not_null
           - accepted_values:

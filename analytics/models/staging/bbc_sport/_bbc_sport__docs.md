@@ -1,73 +1,70 @@
 {#
-    Descriptions shared by columns that mean the same thing in several BBC
-    staging models. Each column's YAML adds the raw field it is built from,
-    which differs between models.
+    Column meanings used in three or more places, all within BBC Sport's
+    sources and staging models. A raw column and the staging column built from
+    it share a block when they mean the same thing; the `raw_*` blocks are for
+    raw values whose form staging changes, such as URNs.
 #}
 
+{#  IDs  #}
+
 {% docs bbc_match_id %}
-BBC's match ID: `s-` followed by Opta's match ID, e.g. `s-1cd4kbemthwb8obzgso3i01lg`.
-The same match carries the same ID in every BBC table, and keeps it when it moves
-from fixtures to results.
+BBC's internal match ID: `s-` followed by Opta's match ID, e.g. `s-1cd4kbemthwb8obzgso3i01lg`.
+Stable whether or not the match is a future fixture.
 {% enddocs %}
 
 {% docs bbc_player_id %}
-BBC's player ID: `s-` followed by Opta's player ID, e.g. `s-9t8eb24gwj56ucggp7x0n0ewa`.
+BBC's internal player ID: `s-` followed by Opta's player ID, e.g. `s-9t8eb24gwj56ucggp7x0n0ewa`.
 {% enddocs %}
 
 {% docs bbc_team_id %}
-BBC's team ID: a slug such as `arsenal-ladies` or `manchester-city-women`. Not an
-Opta ID. For Opta's team ID, join `stg_bbc_sport__match_teams` on `bbc_match_id`
-and `bbc_team_id`.
+BBC's internal team ID: a slug such as `arsenal-ladies` or `manchester-city-women`.
+Unlike BBC's match and player IDs, it does not contain Opta's ID, so Opta's
+team ID cannot be derived from it.
 {% enddocs %}
 
-{#
-    The Opta ID blocks (`opta_match_id`, `opta_player_id`, `opta_team_id`) are in
-    models/_shared__docs.md, since the marts use them too. Staging adds
-    `opta_id_from_bbc_id` to say how it derives them.
-#}
-
-{% docs regulation_time_minutes %}
-The regulation match minute the event happened in: the number before the `'` in
-raw `timeLabel_value`, so `90'+4` gives 90.
-{% enddocs %}
-
-{% docs injury_time_minutes %}
-Minutes into added time: the number after the `+` in raw `timeLabel_value`, so
-`90'+4` gives 4. Zero when there is no `+`.
-{% enddocs %}
-
-{% docs match_period %}
-Which part of the match the event belongs to, worked out from
-`regulation_time_minutes`: 1 for minutes 1–45, 2 for 46–90, 3 for 91–105 and 4
-for 106–120 (3 and 4 are the halves of extra time). Added time belongs to the
-period it extends, so `45'+2` is period 1. Null past minute 120.
-{% enddocs %}
-
-{#
-    Raw columns that BBC sends in the same form in several source tables. These
-    say what arrives; the staging columns built from them say what it means.
-#}
-
-{% docs raw_source_match_id %}
+{% docs bbc_match_page_id %}
 BBC's match page slug, as in the page's URL, e.g. `c04xwd27dr2t`. Only played
 matches have one.
 {% enddocs %}
 
+{% docs opta_tournament_id %}
+Opta's competition ID, `6vq8j5p3av14nr3iuyi4okhjt` for the WSL.
+{% enddocs %}
+
+{#  Raw URNs. Staging removes the prefix, leaving BBC's ID.  #}
+
 {% docs raw_match_urn %}
-BBC's match URN: `urn:bbc:sportsdata:football:event:` followed by `s-` and Opta's
-match ID.
+BBC's match URN: `urn:bbc:sportsdata:football:event:` followed by BBC's match
+ID, e.g. `urn:bbc:sportsdata:football:event:s-1cd4kbemthwb8obzgso3i01lg`.
 {% enddocs %}
 
 {% docs raw_team_urn %}
-BBC's team URN: `urn:bbc:sportsdata:football:team:` followed by a slug such as
-`arsenal-ladies`.
+BBC's team URN: `urn:bbc:sportsdata:football:team:` followed by BBC's team ID,
+e.g. `urn:bbc:sportsdata:football:team:arsenal-ladies`.
 {% enddocs %}
 
 {% docs raw_player_urn %}
-BBC's player URN: `urn:bbc:sportsdata:football:player:` followed by `s-` and
-Opta's player ID.
+BBC's player URN: `urn:bbc:sportsdata:football:player:` followed by BBC's player
+ID, e.g. `urn:bbc:sportsdata:football:player:s-9t8eb24gwj56ucggp7x0n0ewa`.
 {% enddocs %}
 
-{% docs raw_time_label %}
-The match minute as displayed: `13'`, or `90'+4` with any added time after the `+`.
+{#  Matches  #}
+
+{% docs score_halftime %}
+Goals the side had scored at half-time, own goals included.
+{% enddocs %}
+
+{% docs alignment %}
+Which side the team played as: `home` or `away`.
+{% enddocs %}
+
+{% docs source_side %}
+Which side the team played as: `homeTeam` or `awayTeam`.
+{% enddocs %}
+
+{#  Statistics  #}
+
+{% docs stat_value %}
+The statistic's value, e.g. `90` or `87.5`. Every statistic is numeric;
+percentages run from 0 to 100.
 {% enddocs %}

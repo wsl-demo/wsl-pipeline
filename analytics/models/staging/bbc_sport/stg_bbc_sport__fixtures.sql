@@ -12,6 +12,11 @@ WITH parsed AS (
         "event_id" AS bbc_match_id,
         "home_participant_id" AS opta_home_team_id,
         "away_participant_id" AS opta_away_team_id,
+        "tournament_disambiguatedName" AS tournament_name,
+        -- As on results, the tournament URN's tail is a BBC slug and Opta's
+        -- competition ID comes as its own column.
+        {{ analytics.strip_urn('"tournament_urn"', 'tournament') }} AS bbc_tournament_id,
+        "tournament_id" AS opta_tournament_id,
         CAST(
             "month" || '-' || LPAD(
                 LEFT(
@@ -31,6 +36,9 @@ SELECT
     {{ analytics.opta_id_from_bbc_id('bbc_match_id') }} AS opta_match_id,
     opta_home_team_id,
     opta_away_team_id,
+    tournament_name,
+    bbc_tournament_id,
+    opta_tournament_id,
     match_date,
     kickoff_time_local IS NULL AS is_kickoff_time_tbc,
     CASE

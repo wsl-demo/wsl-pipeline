@@ -20,11 +20,11 @@ models:
           column_name: "bbc_match_id || '|' || bbc_official_id"
     columns:
       - name: bbc_match_id
-        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_match_id') }}"
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -32,20 +32,16 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: bbc_official_id
-        description: >
-          BBC's official ID. From raw `id`, with the
-          `urn:bbc:sportsdata:football:official:` prefix removed by
-          `strip_urn`. Unlike player and match URNs it has no `s-`; it looks
-          like an Opta ID but is unconfirmed.
+        description: "BBC's official ID. Unlike BBC's player and match IDs it has no `s-`; it looks like an Opta ID but is unconfirmed."
         data_tests:
           - not_null
       - name: bbc_official_op_id
-        description: A short numeric ID BBC sends for 4 of the 45 referees, null for the rest; what issues it is unconfirmed. From raw `opId`, as sent.
+        description: "A short numeric ID BBC sends for 4 of the 45 referees, null for the rest; what issues it is unconfirmed."
       - name: first_name
-        description: From raw `firstName`, as sent.
+        description: "The match official's first name."
         data_tests:
           - not_null
       - name: last_name
-        description: From raw `lastName`, as sent.
+        description: "The match official's last name."
         data_tests:
           - not_null

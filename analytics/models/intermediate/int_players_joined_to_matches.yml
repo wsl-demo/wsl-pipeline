@@ -1,0 +1,73 @@
+models:
+  - name: int_players_joined_to_matches
+    description: |
+      Everyone named in a matchday squad, starters and the whole bench, with
+      the match's kickoff and season attached and the player's team keyed on
+      Opta's ID.
+
+      **Grain:** one row per player per match (`opta_match_id`,
+      `opta_player_id`, tested unique).
+
+      **What this step does**
+      - Joins each squad member (`stg_bbc_sport__match_players`) to their
+        match (`stg_bbc_sport__matches`) for its kickoff and season.
+      - Looks up the team's Opta ID in `stg_bbc_sport__match_teams`, because
+        the squad lists only carry BBC's team slug. From here on, BBC's own IDs
+        are left behind.
+      - Derives `has_appeared`, which separates players who took part from
+        unused substitutes.
+      - Ranks each player's squad selections, newest first (`recency_rank`), so
+        later models can take a player's latest name and shirt number.
+
+      **Used by:** `matchday_squad_members`, `squad_members`, `players` and
+      `int_players_starts_aggregated_by_position`.
+    data_tests:
+      - unique:
+          column_name: "opta_match_id || '|' || opta_player_id"
+    columns:
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_player_id
+        description: "{{ doc('opta_player_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_team_id
+        description: "{{ doc('opta_team_id') }} The team the player was named for in the match."
+        data_tests:
+          - not_null
+      - name: season
+        description: "{{ doc('season') }}"
+        data_tests:
+          - not_null
+      - name: display_name
+        description: "{{ doc('display_name') }}"
+      - name: name_first
+        description: "{{ doc('name_first') }}"
+      - name: name_last
+        description: "{{ doc('name_last') }}"
+      - name: name_shirt
+        description: "{{ doc('name_shirt') }}"
+      - name: position
+        description: "{{ doc('position') }}"
+      - name: shirt_number
+        description: "{{ doc('shirt_number') }}"
+      - name: is_starter
+        description: "{{ doc('is_starter') }}"
+      - name: is_captain
+        description: "{{ doc('is_captain') }}"
+      - name: has_appeared
+        description: "True for starters and for substitutes who came on; false for the unused bench, who are still part of the matchday squad."
+        data_tests:
+          - not_null
+      - name: kicked_off_at
+        description: "{{ doc('kicked_off_at') }}"
+        data_tests:
+          - not_null
+      - name: recency_rank
+        description: >
+          1 for the player's latest squad selection. Ties are broken on opta_match_id
+          so the ordering is deterministic.
+        data_tests:
+          - not_null

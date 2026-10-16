@@ -10,13 +10,13 @@ models:
     columns:
       - name: opta_match_id
         data_type: varchar
-        description: "{{ doc('opta_match_id') }} Primary key."
+        description: "{{ doc('opta_match_id') }}"
         data_tests:
           - unique
           - not_null
       - name: opta_home_team_id
         data_type: varchar
-        description: "{{ doc('opta_team_id') }} The home team. Foreign key to teams."
+        description: "{{ doc('opta_team_id') }} The home team."
         data_tests:
           - not_null
           - relationships:
@@ -25,7 +25,7 @@ models:
                 field: opta_team_id
       - name: opta_away_team_id
         data_type: varchar
-        description: "{{ doc('opta_team_id') }} The away team. Foreign key to teams."
+        description: "{{ doc('opta_team_id') }} The away team."
         data_tests:
           - not_null
           - relationships:
@@ -34,7 +34,7 @@ models:
                 field: opta_team_id
       - name: match_status
         data_type: varchar
-        description: "'scheduled' until a result exists, then 'played'."
+        description: "`scheduled` until a result exists, then `played`."
         data_tests:
           - not_null
           - accepted_values:
@@ -42,7 +42,7 @@ models:
                 values: ['scheduled', 'played']
       - name: season
         data_type: varchar
-        description: "{{ doc('season') }} Foreign key to seasons."
+        description: "{{ doc('season') }}"
         data_tests:
           - not_null
           - relationships:
@@ -51,30 +51,30 @@ models:
                 field: season
       - name: winner_side
         data_type: varchar
-        description: "'home', 'away' or 'draw'. Null until the match is played."
+        description: "{{ doc('winner_side') }}"
       - name: tournament_name
         data_type: varchar
-        description: Null for a scheduled match; the fixtures page does not carry it.
+        description: "{{ doc('tournament_name') }}"
       - name: venue_name
         data_type: varchar
-        description: Null for a scheduled match; the fixtures page does not carry it.
+        description: "{{ doc('venue_name') }}"
       - name: home_score_fulltime
         data_type: integer
-        description: Null until the match is played.
+        description: "{{ doc('score_fulltime') }} The home team."
       - name: away_score_fulltime
         data_type: integer
-        description: Null until the match is played.
+        description: "{{ doc('score_fulltime') }} The away team."
       - name: home_points
         data_type: integer
-        description: League points the home side earned (3 win, 1 draw, 0 loss). Null until played.
+        description: "{{ doc('points') }} The home team."
       - name: away_points
         data_type: integer
-        description: League points the away side earned (3 win, 1 draw, 0 loss). Null until played.
+        description: "{{ doc('points') }} The away team."
       - name: match_date
         data_type: date
-        description: Calendar date of the match in UK local time.
+        description: "{{ doc('match_date') }}"
         data_tests:
           - not_null
       - name: kicked_off_at
         data_type: timestamp with time zone
-        description: Kickoff. Null for a scheduled match whose time is still TBC.
+        description: "{{ doc('kicked_off_at') }}"

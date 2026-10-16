@@ -1,0 +1,46 @@
+models:
+  - name: int_players_starts_aggregated_by_position
+    description: |
+      How often each player started in each position, counted separately for
+      each team and season, because a player can change both.
+
+      **Grain:** one row per season, team, player and position started in
+      (tested unique).
+
+      **What this step does:** counts the starts in
+      `int_players_joined_to_matches` and keeps the latest kickoff of each,
+      which breaks ties when two positions have the same count. Substitute
+      appearances are left out, because BBC records no position for them.
+
+      **Used by:** `squad_members`, to pick each player's
+      `most_common_start_position`.
+    data_tests:
+      - unique:
+          column_name: "season || '|' || opta_team_id || '|' || opta_player_id || '|' || position"
+    columns:
+      - name: season
+        description: "{{ doc('season') }}"
+        data_tests:
+          - not_null
+      - name: opta_team_id
+        description: "{{ doc('opta_team_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_player_id
+        description: "{{ doc('opta_player_id') }}"
+        data_tests:
+          - not_null
+      - name: position
+        description: "{{ doc('position') }}"
+        data_tests:
+          - not_null
+      - name: starts
+        description: Number of matches the player started in this position.
+        data_tests:
+          - not_null
+      - name: last_started_at
+        description: >
+          Kick-off of the most recent start in this position. Used to break ties
+          when two positions have an equal number of starts.
+        data_tests:
+          - not_null

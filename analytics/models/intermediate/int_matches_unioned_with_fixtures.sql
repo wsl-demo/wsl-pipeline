@@ -36,7 +36,7 @@ scheduled AS (
         CAST(NULL AS integer) AS home_score_fulltime,
         CAST(NULL AS integer) AS away_score_fulltime,
         CAST(NULL AS varchar) AS winner_side,
-        CAST(NULL AS varchar) AS tournament_name,
+        tournament_name,
         CAST(NULL AS varchar) AS venue_name
     FROM {{ ref('stg_bbc_sport__fixtures') }}
     WHERE opta_match_id NOT IN (SELECT opta_match_id FROM played)

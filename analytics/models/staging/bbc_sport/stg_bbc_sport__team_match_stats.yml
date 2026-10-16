@@ -26,11 +26,11 @@ models:
           column_name: "bbc_match_id || '|' || bbc_team_id || '|' || stat_name"
     columns:
       - name: bbc_match_id
-        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_match_id') }}"
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -38,7 +38,7 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: bbc_team_id
-        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_team_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -46,25 +46,18 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: alignment
-        description: "`home` or `away`. From raw `alignment`, as sent."
+        description: "{{ doc('alignment') }}"
       - name: stat_name
-        description: >
-          Name of the statistic. From raw `stat_path`, as sent: most are
-          `group.name` (`attack.shotsTotal`, `defence.wonTackle`,
-          `distribution.totalPass`, `goalkeeper.divingSave`), a few have no
-          group (`possessionPercentage`, `cornersWon`, `subsMade`).
+        description: "BBC's name for the statistic, mostly `group.name`, e.g. `attack.shotsTotal`, `defence.wonTackle`; a few have no group, e.g. `possessionPercentage`."
         data_tests:
           - not_null
       - name: stat_measure
-        description: >
-          From raw `stat_measure`, as sent. Always "total" in the data observed
-          so far. Tested so that a new measure type, such as a per-half
-          breakdown, is noticed rather than silently doubling the grain.
+        description: "Always `total` in the data observed so far. Tested so that a new kind of measure, such as a per-half breakdown, is noticed rather than silently doubling the grain."
         data_tests:
           - accepted_values:
               arguments:
                 values: ['total']
       - name: stat_value
-        description: The statistic's value. From raw `stat_value`, cast to double. Percentages (`possessionPercentage`, `*Percentage`) are 0–100.
+        description: "{{ doc('stat_value') }}"
         data_tests:
           - not_null

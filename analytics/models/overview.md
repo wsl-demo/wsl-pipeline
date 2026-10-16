@@ -1,7 +1,7 @@
 {% docs __overview__ %}
 # WSL pipeline
 
-Women's Super League data, scraped from two websites, turned into six tested
+Women's Super League data, from two data sources, turned into six tested
 tables that a web app serves. This site documents every step in between. The
 lineage graph shows how the models connect; this page explains what the data
 means and why each layer exists.
@@ -13,7 +13,7 @@ means and why each layer exists.
 | `bbc_sport` | BBC Sport's page for every played match (score, squads, goals, cards, statistics) and its fixtures page for matches still to come | Everything about matches and who played in them |
 | `wsl_football` | The league's own site: the players in each club's current squad | Player biography only: nationality, birth date, height, weight |
 
-Both are scraped to CSV and loaded into the `raw` schema as text. Which team a
+Both are written to CSV and loaded into the `raw` schema as text. Which team a
 player was in always comes from BBC Sport. `wsl_football` is a snapshot of
 current squads, so it knows nothing about players who have since left.
 

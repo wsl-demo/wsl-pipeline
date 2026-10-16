@@ -20,38 +20,35 @@ models:
       BBC Sport, so none of it is used.
     columns:
       - name: opta_player_id
-        description: "{{ doc('opta_player_id') }} From raw `optaId`, as sent. Primary key."
+        description: "{{ doc('opta_player_id') }}"
         data_tests:
           - not_null
           - unique
       - name: first_name
-        description: The player's first name. From raw `mediaFirstName`, as sent.
+        description: "{{ doc('name_first') }}"
         data_tests:
           - not_null
       - name: last_name
-        description: The player's last name. From raw `mediaLastName`, as sent.
+        description: "{{ doc('name_last') }}"
         data_tests:
           - not_null
       - name: short_name
-        description: >
-          Initial and surname, e.g. "A. Russo". From raw `shortName`, as sent.
-          Identical to BBC Sport's display_name for every player both sources
-          know.
+        description: "{{ doc('display_name') }}"
         data_tests:
           - not_null
       - name: shirt_name
-        description: The name the player is known by, e.g. "Mapi León". From raw `shirtName`; empty becomes null. Recorded for only a few players.
+        description: "{{ doc('name_shirt') }}"
       - name: nationality
-        description: "{{ doc('nationality') }} From raw `nationality`, as sent."
+        description: "{{ doc('nationality') }}"
       - name: nationality_iso_code
-        description: "{{ doc('nationality_iso_code') }} From raw `nationalityIsoCode`, as sent."
+        description: "{{ doc('nationality_iso_code') }}"
       - name: birth_date
-        description: "{{ doc('birth_date') }} From the first ten characters of raw `dateOfBirth`, cast to date."
+        description: "{{ doc('birth_date') }}"
         data_tests:
           - expression_is_true:
               arguments:
                 expression: "birth_date is null or birth_date between date '1970-01-01' and date '2012-12-31'"
       - name: height_cm
-        description: "{{ doc('height_cm') }} From raw `height`, cast to integer."
+        description: "{{ doc('height_cm') }}"
       - name: weight_kg
-        description: "{{ doc('weight_kg') }} From raw `weight`, cast to integer."
+        description: "{{ doc('weight_kg') }}"

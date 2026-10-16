@@ -43,11 +43,11 @@ models:
           column_name: "bbc_match_id || '|' || bbc_player_id"
     columns:
       - name: bbc_match_id
-        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_match_id') }}"
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -55,7 +55,7 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: bbc_team_id
-        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_team_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -63,27 +63,24 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: bbc_player_id
-        description: "{{ doc('bbc_player_id') }} From raw `urn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_player_id') }}"
         data_tests:
           - not_null
       - name: opta_player_id
-        description: "{{ doc('opta_player_id') }} {{ doc('opta_id_from_bbc_id') }} The not_null test turns a BBC ID without its `s-` into a failure."
+        description: "{{ doc('opta_player_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
+          # Fails for a BBC player ID without its `s-`, which derives to null.
           - not_null
       - name: display_name
-        description: The name as BBC abbreviates it, e.g. "F. Kirby". From raw `displayName`, as sent.
+        description: "{{ doc('display_name') }}"
       - name: name_first
-        description: From raw `name_first`, as sent.
+        description: "{{ doc('name_first') }}"
       - name: name_last
-        description: From raw `name_last`, as sent.
+        description: "{{ doc('name_last') }}"
       - name: name_shirt
-        description: The name printed on the shirt. From raw `name_shirt`, as sent.
+        description: "{{ doc('name_shirt') }}"
       - name: position
-        description: >
-          Playing position, for starters only. From raw `position`, with
-          "Substitute" turned into null: BBC writes it for everyone on the
-          bench, which is squad status (already in `is_starter`), not a
-          position.
+        description: "{{ doc('position') }}"
         data_tests:
           # Guards the downstream position aggregation: a renamed or newly
           # added position fails here instead of silently disappearing.
@@ -98,40 +95,37 @@ models:
                   - Attacking Midfielder
                   - Striker
       - name: shirt_number
-        description: From raw `shirtNumber`, cast to integer (an empty string would become null).
+        description: "{{ doc('shirt_number') }}"
       # is_starter and is_captain are CASE ... ELSE false, so they are
       # non-nullable by construction and a not_null test could never fail.
       - name: is_starter
-        description: True when raw `source_player_list` is `starters`; false for `substitutes`, the bench.
+        description: "{{ doc('is_starter') }}"
       - name: is_captain
-        description: True when raw `isCaptain` is `true`. Exactly one player per team per match.
+        description: "{{ doc('is_captain') }}"
       - name: formation_place
-        description: The starter's place in the formation, 1–11. From raw `formationPlace`, cast to integer. Null for the bench.
+        description: "A starter's place in the formation, 1 to 11. Null for the bench."
       #
       # (starter) substituted off
       - name: substituted_off_reason
-        description: "`Tactical` or `Injury`. From raw `substitutedOff_reason`, as sent. Null if the player wasn't taken off."
+        description: "{{ doc('substituted_off_reason') }}"
       - name: bbc_substituted_off_for_player_id
-        description: "BBC's player ID of the player who came on for this one. From raw `substitutedOff_playerOnUrn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_player_id') }} The player who came on for this one."
         data_tests:
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_players')
                 field: bbc_player_id
       - name: opta_substituted_off_for_player_id
-        description: Opta's player ID of the player who came on for this one, derived from `bbc_substituted_off_for_player_id` like `opta_player_id`.
+        description: "{{ doc('opta_player_id') }} {{ doc('opta_id_from_bbc_id') }} The player who came on for this one."
         data_tests:
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: substituted_off_period
-        description: Period of the match the player was taken off in. From raw `substitutedOff_periodId`, cast to integer.
+        description: "Period of the match the player was taken off in."
       - name: substituted_off_minute
-        description: >
-          The minute being played when the player was taken off, counted from
-          kickoff: the minutes part of `raw_substituted_off_min_sec` plus one,
-          so `63:57` is the 64th minute and `45:00` the 46th.
+        description: "The minute being played when the player was taken off, counted from kickoff, so `63:57` on the match clock is the 64th minute and `45:00` the 46th. Null if they weren't taken off."
       - name: substituted_off_regulation_time
         description: >
           `substituted_off_minute` capped at the end of its period (45, 90, 105
@@ -140,7 +134,7 @@ models:
       - name: substituted_off_injury_time
         description: Minutes past the end of the period, so the 94th minute of the second half gives 4. Zero within regulation time.
       - name: raw_substituted_off_min_sec
-        description: Match clock when the player was taken off, `mm:ss` from kickoff (e.g. `63:57`). From raw `substitutedOff_timeMinSec`, as sent.
+        description: "Match clock when the player was taken off, `mm:ss` from kickoff, e.g. `63:57`."
       - name: substituted_off_time_seconds
         description: "`raw_substituted_off_min_sec` in seconds from kickoff: `63:57` gives 3837."
         data_tests:
@@ -150,31 +144,31 @@ models:
       #
       # (sub) substituted on
       - name: substituted_on_reason
-        description: "`Tactical` or `Injury`: the reason the player this one replaced was taken off. From raw `substitutedOn_reason`, as sent. Null if the player didn't come on."
+        description: "{{ doc('substituted_on_reason') }}"
       - name: bbc_substituted_on_for_player_id
-        description: "BBC's player ID of the player this one replaced. From raw `substitutedOn_playerOffUrn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_player_id') }} The player this one replaced."
         data_tests:
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_players')
                 field: bbc_player_id
       - name: opta_substituted_on_for_player_id
-        description: Opta's player ID of the player this one replaced, derived from `bbc_substituted_on_for_player_id` like `opta_player_id`.
+        description: "{{ doc('opta_player_id') }} {{ doc('opta_id_from_bbc_id') }} The player this one replaced."
         data_tests:
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: substituted_on_period
-        description: Period of the match the player came on in. From raw `substitutedOn_periodId`, cast to integer.
+        description: "Period of the match the player came on in."
       - name: substituted_on_minute
-        description: The minute being played when the player came on, counted from kickoff, worked out like `substituted_off_minute`.
+        description: "The minute being played when the player came on, counted from kickoff, so `63:57` on the match clock is the 64th minute. Null if they didn't come on."
       - name: substituted_on_regulation_time
         description: "`substituted_on_minute` capped at the end of its period, like `substituted_off_regulation_time`."
       - name: substituted_on_injury_time
         description: Minutes past the end of the period, like `substituted_off_injury_time`.
       - name: raw_substituted_on_min_sec
-        description: Match clock when the player came on, `mm:ss` from kickoff. From raw `substitutedOn_timeMinSec`, as sent.
+        description: "Match clock when the player came on, `mm:ss` from kickoff, e.g. `63:57`."
       - name: substituted_on_time_seconds
         description: "`raw_substituted_on_min_sec` in seconds from kickoff."
         data_tests:

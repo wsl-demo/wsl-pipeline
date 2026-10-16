@@ -6,7 +6,8 @@ models:
       matchday squads that season, so a player who never made a matchday squad
       is not here, and a player who moved mid-season appears for each team.
       Biography comes from current squad lists, so it is null for players who
-      have since left.
+      have since left. Names and shirt number are as at the player's latest
+      selection for the team that season.
     config:
       contract:
         enforced: true
@@ -16,7 +17,7 @@ models:
     columns:
       - name: opta_player_id
         data_type: varchar
-        description: "{{ doc('opta_player_id') }} Foreign key to players."
+        description: "{{ doc('opta_player_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -25,7 +26,7 @@ models:
                 field: opta_player_id
       - name: opta_team_id
         data_type: varchar
-        description: "{{ doc('opta_team_id') }} Foreign key to teams."
+        description: "{{ doc('opta_team_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -34,7 +35,7 @@ models:
                 field: opta_team_id
       - name: season
         data_type: varchar
-        description: "{{ doc('season') }} Foreign key to seasons."
+        description: "{{ doc('season') }}"
         data_tests:
           - not_null
           - relationships:
@@ -43,13 +44,13 @@ models:
                 field: season
       - name: name_first
         data_type: varchar
-        description: As BBC gave it at the player's latest selection for this team this season.
+        description: "{{ doc('name_first') }}"
       - name: name_last
         data_type: varchar
-        description: As BBC gave it at the player's latest selection for this team this season.
+        description: "{{ doc('name_last') }}"
       - name: display_name
         data_type: varchar
-        description: As BBC gave it at the player's latest selection for this team this season, e.g. "F. Kirby".
+        description: "{{ doc('display_name') }}"
       - name: most_common_start_position
         data_type: varchar
         description: >
@@ -68,13 +69,13 @@ models:
                   - Striker
       - name: nationality
         data_type: varchar
-        description: "{{ doc('nationality') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('nationality') }}"
       - name: nationality_iso_code
         data_type: varchar
-        description: "{{ doc('nationality_iso_code') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('nationality_iso_code') }}"
       - name: shirt_number
         data_type: integer
-        description: Shirt worn at the player's latest squad selection for this team this season.
+        description: "{{ doc('shirt_number') }}"
       - name: matches_in_squad
         data_type: integer
         description: Matchday squads the player was named in, bench included.
@@ -88,13 +89,13 @@ models:
         description: Matches the player started.
       - name: height_cm
         data_type: integer
-        description: "{{ doc('height_cm') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('height_cm') }}"
       - name: weight_kg
         data_type: integer
-        description: "{{ doc('weight_kg') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('weight_kg') }}"
       - name: birth_date
         data_type: date
-        description: "{{ doc('birth_date') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
+        description: "{{ doc('birth_date') }}"
       - name: first_squad_date
         data_type: date
         description: Date of the player's first squad selection for this team this season.

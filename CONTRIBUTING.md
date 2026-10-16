@@ -36,8 +36,15 @@ them into staging, intermediate and mart models. Run `just` to list commands.
 
    Reference raw tables with `source()` and everything else with `ref()`.
    Raw columns are all `varchar`, so staging is where types are set.
-3. **Document and test it** in the YAML beside the model: a description, plus
-   `unique` / `not_null` on keys and `accepted_values` on categories. Logic that
+3. **Document and test it** in the YAML beside the model: a model description,
+   plus `unique` / `not_null` on keys and `accepted_values` on categories.
+   A column meaning used in three or more places, raw columns included, gets a
+   doc block in the `_[directory]__docs.md` of the lowest folder that holds
+   every use, and those columns' descriptions are `{{ doc('…') }}` plus at most
+   a short qualifier such as "The home team.". A meaning used once or twice is
+   a short inline description. Don't
+   restate what column lineage or tests already show ("From raw …", "Primary
+   key."). Logic that
    is easy to get subtly wrong (clocks, boundaries, parsing) also gets a unit
    test: see [Unit tests](#unit-tests).
 4. **Build it:** `just build --select my_model+` builds the model and its downstream models, with tests.

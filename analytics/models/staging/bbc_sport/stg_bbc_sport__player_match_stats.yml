@@ -24,11 +24,11 @@ models:
           column_name: "bbc_match_id || '|' || bbc_player_id || '|' || stat_name"
     columns:
       - name: bbc_match_id
-        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_match_id') }}"
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -36,7 +36,7 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: bbc_team_id
-        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_team_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -44,7 +44,7 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: bbc_player_id
-        description: "{{ doc('bbc_player_id') }} From raw `playerUrn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_player_id') }}"
         data_tests:
           - not_null
       - name: opta_player_id
@@ -56,9 +56,9 @@ models:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: stat_index
-        description: Where the statistic comes in the list BBC shows for this player, from 0. Varies by player, because each list holds only the statistics that player has. From raw `stat_index`, cast to integer.
+        description: "Where the statistic comes in the list BBC shows for the player, from 0. Varies by player, because each list holds only the statistics that player has."
       - name: stat_name
-        description: Machine name of the statistic, e.g. "minsPlayed". From raw `dataField`, as sent.
+        description: "BBC's machine name for the statistic, e.g. `minsPlayed`, `totalPass`."
         data_tests:
           - not_null
           # Guards the pivot in int_player_match_stats_pivoted: a new or
@@ -82,12 +82,8 @@ models:
                   - penaltySave
                   - penaltyMiss
       - name: stat_label
-        description: The label BBC shows, e.g. "Minutes played", "Chances created" (for `totalAssists`). From raw `rowLabel`, as sent.
+        description: "The label BBC shows for the statistic, e.g. \"Minutes played\", or \"Chances created\" for `totalAssists`."
       - name: stat_value
-        description: >
-          The statistic's value. From raw `statValue`, cast to double: every
-          statistic is numeric, the two percentages
-          (`accuratePassPercentage`, `wonTacklePercentage`) fractional and the
-          rest whole numbers.
+        description: "{{ doc('stat_value') }}"
         data_tests:
           - not_null

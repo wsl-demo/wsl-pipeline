@@ -12,6 +12,7 @@
     ('stg_bbc_sport__player_match_stats', 'bbc_match_id'),
     ('stg_bbc_sport__team_match_stats', 'bbc_match_id'),
     ('stg_bbc_sport__matches', 'bbc_tournament_id'),
+    ('stg_bbc_sport__fixtures', 'bbc_tournament_id'),
     ('stg_bbc_sport__matches', 'bbc_venue_id'),
     ('stg_bbc_sport__matches', 'bbc_home_team_id'),
     ('stg_bbc_sport__matches', 'bbc_away_team_id'),

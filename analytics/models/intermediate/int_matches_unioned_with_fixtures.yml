@@ -1,0 +1,69 @@
+models:
+  - name: int_matches_unioned_with_fixtures
+    description: |
+      Every match, played or scheduled, with everything that follows from the
+      match itself: its season, its status, and the league points each side
+      earned.
+
+      **Grain:** one row per match (`opta_match_id`, tested unique).
+
+      **What this step does**
+      - Combines results (`stg_bbc_sport__matches`) with fixtures
+        (`stg_bbc_sport__fixtures`). A fixture and its result share an
+        `opta_match_id`, so a match moves from `scheduled` to `played` without
+        changing identity; where both exist, the result wins.
+      - Assigns each match a season with the `season_of` macro.
+      - Awards league points (3 for a win, 1 for a draw, 0 for a loss). A
+        football rule rather than a cleanup of the source, so it lives here and
+        not in staging.
+
+      **Used by:** `matches`, which publishes it unchanged.
+    data_tests:
+      - expression_is_true:
+          arguments:
+            expression: "match_status <> 'played' or (home_points is not null and away_points is not null)"
+    columns:
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+        data_tests:
+          - unique
+          - not_null
+      - name: opta_home_team_id
+        description: "{{ doc('opta_team_id') }} The home team."
+        data_tests:
+          - not_null
+      - name: opta_away_team_id
+        description: "{{ doc('opta_team_id') }} The away team."
+        data_tests:
+          - not_null
+      - name: match_status
+        description: "`scheduled` until a result exists, then `played`."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['scheduled', 'played']
+      - name: season
+        description: "{{ doc('season') }}"
+        data_tests:
+          - not_null
+      - name: winner_side
+        description: "{{ doc('winner_side') }}"
+      - name: tournament_name
+        description: "{{ doc('tournament_name') }}"
+      - name: venue_name
+        description: "{{ doc('venue_name') }}"
+      - name: home_score_fulltime
+        description: "{{ doc('score_fulltime') }} The home team."
+      - name: away_score_fulltime
+        description: "{{ doc('score_fulltime') }} The away team."
+      - name: home_points
+        description: "{{ doc('points') }} The home team."
+      - name: away_points
+        description: "{{ doc('points') }} The away team."
+      - name: match_date
+        description: "{{ doc('match_date') }}"
+        data_tests:
+          - not_null
+      - name: kicked_off_at
+        description: "{{ doc('kicked_off_at') }}"

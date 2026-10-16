@@ -22,11 +22,11 @@ models:
           column_name: "bbc_match_id || '|' || source_side"
     columns:
       - name: bbc_match_id
-        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_match_id') }}"
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -34,35 +34,32 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: source_side
-        description: "`homeTeam` or `awayTeam`. From raw `source_side`, as sent. Says the same as `alignment`, spelled differently."
+        description: "{{ doc('source_side') }}"
         data_tests:
           - accepted_values:
               arguments:
                 values: ['homeTeam', 'awayTeam']
       - name: bbc_team_id
-        description: "BBC's team ID: a slug such as `arsenal-ladies`. Not an Opta ID. From raw `urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_team_id') }}"
         data_tests:
           - not_null
       - name: opta_team_id
-        description: >
-          {{ doc('opta_team_id') }} From raw `id`, as sent. Matched the
-          contestantId in Opta's standings feed for all 14 WSL clubs (October
-          2026).
+        description: "{{ doc('opta_team_id') }}"
         data_tests:
           - not_null
       - name: team_name
-        description: Full team name as BBC writes it, e.g. "Tottenham Hotspur" (no "Women"). From raw `name_fullName`, as sent.
+        description: "{{ doc('team_name') }}"
         data_tests:
           - not_null
       - name: team_short_name
-        description: Short name, e.g. "Spurs", "Man City". From raw `name_shortName`, as sent.
+        description: "{{ doc('team_short_name') }}"
       - name: team_code
-        description: Three-letter code, e.g. "TOT". From raw `name_code`, as sent.
+        description: "{{ doc('team_code') }}"
       - name: alignment
-        description: "`home` or `away`. From raw `alignment`, as sent. Says the same as `source_side`."
+        description: "{{ doc('alignment') }}"
       - name: formation
-        description: Starting formation as BBC writes it, with spaces around the dashes, e.g. "4 - 2 - 3 - 1". From raw `formation_value`, as sent.
+        description: "Starting formation as BBC writes it, with spaces around the dashes, e.g. \"4 - 2 - 3 - 1\"."
       - name: bbc_manager_id
-        description: BBC's ID of the team's manager for this match. Stable per manager; unconfirmed as an Opta ID. From raw `manager_id`, as sent.
+        description: "BBC's ID for the team's manager in the match, e.g. `btg39qwx8587tn3oieu0ajpbd`. Stable per manager; it looks like an Opta ID but is unconfirmed."
       - name: manager_name
-        description: The manager's full name. From raw `manager_name_full`, as sent.
+        description: "The team manager's full name."

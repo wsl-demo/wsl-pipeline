@@ -13,7 +13,7 @@ version: 2
 sources:
   - name: bbc_sport
     description: >
-      Women's Super League match data scraped from BBC Sport: each played
+      Women's Super League match data sourced from BBC Sport: each played
       match's page, and the fixtures page for matches still to come.
     schema: raw
     loader: just setup
@@ -25,13 +25,13 @@ sources:
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Primary key."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - unique
               - not_null
           - name: urn
             data_type: varchar
-            description: "{{ doc('raw_match_urn') }} Other tables call this `match_urn`."
+            description: "{{ doc('raw_match_urn') }}"
             data_tests:
               - unique
               - not_null
@@ -70,7 +70,7 @@ sources:
                     values: ['FT']
           - name: winner
             data_type: varchar
-            description: "`home`, `away` or `draw`."
+            description: "{{ doc('winner_side') }}"
             data_tests:
               - accepted_values:
                   arguments:
@@ -80,25 +80,25 @@ sources:
             description: "{{ doc('raw_team_urn') }} The home team."
           - name: home_runningScores_halftime
             data_type: varchar
-            description: Home goals at half-time, as text, e.g. `1`.
+            description: "{{ doc('score_halftime') }} The home team."
           - name: home_runningScores_fulltime
             data_type: varchar
-            description: Home goals at full time, as text.
+            description: "{{ doc('score_fulltime') }} The home team."
           - name: away_urn
             data_type: varchar
             description: "{{ doc('raw_team_urn') }} The away team."
           - name: away_runningScores_halftime
             data_type: varchar
-            description: Away goals at half-time, as text.
+            description: "{{ doc('score_halftime') }} The away team."
           - name: away_runningScores_fulltime
             data_type: varchar
-            description: Away goals at full time, as text.
+            description: "{{ doc('score_fulltime') }} The away team."
           - name: venue_name
             data_type: varchar
-            description: Stadium name as shown for this match, e.g. `Joie Stadium`.
+            description: "{{ doc('venue_name') }}"
           - name: attendance_value
             data_type: varchar
-            description: Crowd size, as text, e.g. `3302`. Empty for 3 matches.
+            description: "Crowd size, e.g. `3302`. Missing for 3 matches."
           - name: home_id
             data_type: varchar
             description: "{{ doc('opta_team_id') }} The home team."
@@ -107,19 +107,19 @@ sources:
             description: "{{ doc('opta_team_id') }} The away team."
           - name: tournament_id
             data_type: varchar
-            description: Opta's competition ID, `6vq8j5p3av14nr3iuyi4okhjt` for the WSL.
+            description: "{{ doc('opta_tournament_id') }}"
           - name: tournament_disambiguatedName
             data_type: varchar
-            description: Competition name, e.g. "Women's Super League".
+            description: "{{ doc('tournament_name') }}"
           - name: stage_id
             data_type: varchar
-            description: Opta's stage ID; one "Regular Season" stage per season.
+            description: "Opta's stage ID. Each season's league is one \"Regular Season\" stage, so it identifies the season in Opta's terms."
           - name: venue_urn
             data_type: varchar
             description: "BBC's venue URN: `urn:bbc:sportsdata:football:venue:` followed by `s-` and an ID."
           - name: source_fetched_at
             data_type: varchar
-            description: When the scraper fetched the page, as an ISO timestamp. Used only as this source's `loaded_at_field`.
+            description: "When the data was fetched, as an ISO timestamp. The source's `loaded_at_field`."
 
       - name: match_actions
         description: >
@@ -135,7 +135,7 @@ sources:
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Foreign key to `matches`."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - relationships:
                   arguments:
@@ -154,16 +154,16 @@ sources:
               - not_null
           - name: action_index
             data_type: varchar
-            description: Position of the acting player in their side's list, from 0, as text.
+            description: "Position of the acting player in their side's list of actions, from 0."
           - name: sub_index
             data_type: varchar
-            description: Position of the action among that player's actions, from 0, as text.
+            description: "Position of the action among that player's actions, from 0."
           - name: playerUrn
             data_type: varchar
             description: "{{ doc('raw_player_urn') }}"
           - name: playerName
             data_type: varchar
-            description: The player's name as BBC abbreviates it, e.g. "K. Shaw".
+            description: "{{ doc('display_name') }}"
           - name: actionType
             data_type: varchar
             description: "Broad kind of action: `goal` or `card`."
@@ -190,7 +190,7 @@ sources:
             description: Screen-reader label for `type`. Identical to `type` in all data observed.
           - name: timeLabel_value
             data_type: varchar
-            description: "{{ doc('raw_time_label') }}"
+            description: "The match minute as displayed: `13'`, or `90'+4` with any added time after the `+`."
           - name: timeLabel_accessible
             data_type: varchar
             description: Screen-reader form of `timeLabel_value`, e.g. "90 minutes plus 4".
@@ -200,7 +200,7 @@ sources:
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Foreign key to `matches`."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - relationships:
                   arguments:
@@ -214,20 +214,20 @@ sources:
             description: "BBC's official URN: `urn:bbc:sportsdata:football:official:` followed by an ID, with no `s-`."
           - name: opId
             data_type: varchar
-            description: A five-digit numeric ID, present for only 4 of the 45 referees.
+            description: "A short numeric ID BBC sends for 4 of the 45 referees, null for the rest; what issues it is unconfirmed."
           - name: firstName
             data_type: varchar
-            description: The official's first name.
+            description: "The match official's first name."
           - name: lastName
             data_type: varchar
-            description: The official's last name.
+            description: "The match official's last name."
 
       - name: match_pitch_layout
         description: Each starter's place on the pitch graphic of a BBC match page, one row per starter per match. Staged by `stg_bbc_sport__match_pitch_layout`.
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Foreign key to `matches`."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - relationships:
                   arguments:
@@ -238,18 +238,18 @@ sources:
             description: "{{ doc('raw_match_urn') }}"
           - name: source_side
             data_type: varchar
-            description: "`homeTeam` or `awayTeam`."
+            description: "{{ doc('source_side') }}"
           - name: team_urn
             data_type: varchar
-            description: "{{ doc('raw_team_urn') }} The player's team."
+            description: "{{ doc('raw_team_urn') }}"
             data_tests:
               - not_null
           - name: row_index
             data_type: varchar
-            description: The formation line the player is drawn in, from 0 (the goalkeeper), as text.
+            description: "The line of the formation the player is in, from the back: 0 is always the goalkeeper, 1 the defenders and wing backs, and higher rows further forward."
           - name: slot_index
             data_type: varchar
-            description: The player's place within that line, from 0, as text.
+            description: "The player's place within their line of the formation, from 0."
           - name: urn
             data_type: varchar
             description: "{{ doc('raw_player_urn') }}"
@@ -261,7 +261,7 @@ sources:
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Foreign key to `matches`."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - relationships:
                   arguments:
@@ -296,14 +296,14 @@ sources:
                     values: ['Yellow Card', 'Red Card', 'Two Yellow Cards']
           - name: timeLabel_value
             data_type: varchar
-            description: "{{ doc('raw_time_label') }}"
+            description: "The match minute as displayed: `13'`, or `90'+4` with any added time after the `+`."
 
       - name: match_players
         description: Each team's matchday squad on a BBC match page, starters and bench, one row per player per match. Staged by `stg_bbc_sport__match_players`.
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Foreign key to `matches`."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - relationships:
                   arguments:
@@ -329,49 +329,49 @@ sources:
               - not_null
           - name: displayName
             data_type: varchar
-            description: The player's name as BBC abbreviates it, e.g. "F. Kirby".
+            description: "{{ doc('display_name') }}"
           - name: name_first
             data_type: varchar
-            description: The player's first name or names.
+            description: "{{ doc('name_first') }}"
           - name: name_last
             data_type: varchar
-            description: The player's last name.
+            description: "{{ doc('name_last') }}"
           - name: name_shirt
             data_type: varchar
-            description: The name printed on the shirt.
+            description: "{{ doc('name_shirt') }}"
           - name: position
             data_type: varchar
             description: Playing position for a starter, e.g. `Defender`; `Substitute` for everyone on the bench.
           - name: shirtNumber
             data_type: varchar
-            description: Shirt number, as text.
+            description: "{{ doc('shirt_number') }}"
           - name: formationPlace
             data_type: varchar
-            description: A starter's place in the formation, `1` to `11`, as text. Empty for the bench.
+            description: "A starter's place in the formation, 1 to 11. Null for the bench."
           - name: isCaptain
             data_type: varchar
-            description: "`true` or `false`, as text."
+            description: "{{ doc('is_captain') }}"
           - name: substitutedOn_timeMinSec
             data_type: varchar
-            description: For a player who came on, the match clock at the time, `mm:ss` from kickoff, e.g. `63:57`.
+            description: "Match clock when the player came on, `mm:ss` from kickoff, e.g. `63:57`."
           - name: substitutedOn_periodId
             data_type: varchar
-            description: For a player who came on, the period it happened in, as text (`1` or `2`).
+            description: "Period of the match the player came on in."
           - name: substitutedOn_reason
             data_type: varchar
-            description: For a player who came on, `Tactical` or `Injury`.
+            description: "{{ doc('substituted_on_reason') }}"
           - name: substitutedOn_playerOffUrn
             data_type: varchar
             description: "{{ doc('raw_player_urn') }} For a player who came on, the player they replaced."
           - name: substitutedOff_timeMinSec
             data_type: varchar
-            description: For a player taken off, the match clock at the time, `mm:ss` from kickoff.
+            description: "Match clock when the player was taken off, `mm:ss` from kickoff, e.g. `63:57`."
           - name: substitutedOff_periodId
             data_type: varchar
-            description: For a player taken off, the period it happened in, as text.
+            description: "Period of the match the player was taken off in."
           - name: substitutedOff_reason
             data_type: varchar
-            description: For a player taken off, `Tactical` or `Injury`.
+            description: "{{ doc('substituted_off_reason') }}"
           - name: substitutedOff_playerOnUrn
             data_type: varchar
             description: "{{ doc('raw_player_urn') }} For a player taken off, the player who came on."
@@ -390,7 +390,7 @@ sources:
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Foreign key to `matches`."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - relationships:
                   arguments:
@@ -401,7 +401,7 @@ sources:
             description: "{{ doc('raw_match_urn') }}"
           - name: source_side
             data_type: varchar
-            description: "`homeTeam` or `awayTeam`."
+            description: "{{ doc('source_side') }}"
             data_tests:
               - accepted_values:
                   arguments:
@@ -414,25 +414,25 @@ sources:
             description: "{{ doc('opta_team_id') }}"
           - name: name_fullName
             data_type: varchar
-            description: Full team name, e.g. "Tottenham Hotspur".
+            description: "{{ doc('team_name') }}"
           - name: name_shortName
             data_type: varchar
-            description: Short team name, e.g. "Spurs".
+            description: "{{ doc('team_short_name') }}"
           - name: name_code
             data_type: varchar
-            description: Three-letter team code, e.g. "TOT".
+            description: "{{ doc('team_code') }}"
           - name: alignment
             data_type: varchar
-            description: "`home` or `away`."
+            description: "{{ doc('alignment') }}"
           - name: formation_value
             data_type: varchar
-            description: Starting formation, with spaces around the dashes, e.g. "4 - 2 - 3 - 1".
+            description: "Starting formation as BBC writes it, with spaces around the dashes, e.g. \"4 - 2 - 3 - 1\"."
           - name: manager_id
             data_type: varchar
-            description: An ID for the team's manager in this match, e.g. `btg39qwx8587tn3oieu0ajpbd`.
+            description: "BBC's ID for the team's manager in the match, e.g. `btg39qwx8587tn3oieu0ajpbd`. Stable per manager; it looks like an Opta ID but is unconfirmed."
           - name: manager_name_full
             data_type: varchar
-            description: The manager's full name.
+            description: "The team manager's full name."
 
       - name: player_match_stats
         description: >
@@ -442,7 +442,7 @@ sources:
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Foreign key to `matches`."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - relationships:
                   arguments:
@@ -459,16 +459,16 @@ sources:
             description: "{{ doc('raw_player_urn') }}"
           - name: stat_index
             data_type: varchar
-            description: Where the statistic comes in the list shown for this player, from 0, as text.
+            description: "Where the statistic comes in the list BBC shows for the player, from 0. Varies by player, because each list holds only the statistics that player has."
           - name: dataField
             data_type: varchar
-            description: Machine name of the statistic, e.g. `minsPlayed`, `totalPass`.
+            description: "BBC's machine name for the statistic, e.g. `minsPlayed`, `totalPass`."
           - name: rowLabel
             data_type: varchar
-            description: The label shown for the statistic, e.g. "Minutes played".
+            description: "The label BBC shows for the statistic, e.g. \"Minutes played\", or \"Chances created\" for `totalAssists`."
           - name: statValue
             data_type: varchar
-            description: The statistic's value, as text, e.g. `90` or `87.5`.
+            description: "{{ doc('stat_value') }}"
 
       - name: team_match_stats
         description: >
@@ -478,7 +478,7 @@ sources:
         columns:
           - name: source_match_id
             data_type: varchar
-            description: "{{ doc('raw_source_match_id') }} Foreign key to `matches`."
+            description: "{{ doc('bbc_match_page_id') }}"
             data_tests:
               - relationships:
                   arguments:
@@ -492,22 +492,20 @@ sources:
             description: "{{ doc('raw_team_urn') }}"
           - name: alignment
             data_type: varchar
-            description: "`home` or `away`."
+            description: "{{ doc('alignment') }}"
           - name: stat_path
             data_type: varchar
-            description: "Name of the statistic, mostly `group.name`, e.g. `attack.shotsTotal`, `possessionPercentage`."
+            description: "BBC's name for the statistic, mostly `group.name`, e.g. `attack.shotsTotal`, `defence.wonTackle`; a few have no group, e.g. `possessionPercentage`."
           - name: stat_measure
             data_type: varchar
-            description: >
-              Always `total` in the data observed so far. Tested so that a new
-              kind of measure, such as a per-half breakdown, is noticed.
+            description: "Always `total` in the data observed so far. Tested so that a new kind of measure, such as a per-half breakdown, is noticed rather than silently doubling the grain."
             data_tests:
               - accepted_values:
                   arguments:
                     values: ['total']
           - name: stat_value
             data_type: varchar
-            description: The statistic's value, as text.
+            description: "{{ doc('stat_value') }}"
 
       - name: fixtures
         description: >
@@ -520,9 +518,7 @@ sources:
             description: The month heading the fixture is listed under, e.g. `2026-10`.
           - name: event_id
             data_type: varchar
-            description: >
-              BBC's match ID without a URN prefix: `s-` followed by Opta's match
-              ID, e.g. `s-1cd4kbemthwb8obzgso3i01lg`. Primary key.
+            description: "{{ doc('bbc_match_id') }}"
             data_tests:
               - unique
               - not_null
@@ -542,3 +538,12 @@ sources:
             description: "{{ doc('opta_team_id') }} The away team."
             data_tests:
               - not_null
+          - name: tournament_disambiguatedName
+            data_type: varchar
+            description: "{{ doc('tournament_name') }}"
+          - name: tournament_urn
+            data_type: varchar
+            description: "BBC's tournament URN: `urn:bbc:sportsdata:football:tournament:womens-super-league`."
+          - name: tournament_id
+            data_type: varchar
+            description: "{{ doc('opta_tournament_id') }}"

@@ -20,11 +20,11 @@ models:
           column_name: "bbc_match_id || '|' || bbc_player_id"
     columns:
       - name: bbc_match_id
-        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_match_id') }}"
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -32,13 +32,13 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: source_side
-        description: "`homeTeam` or `awayTeam`: which team's formation the slot belongs to. From raw `source_side`, as sent."
+        description: "{{ doc('source_side') }}"
         data_tests:
           - accepted_values:
               arguments:
                 values: ['homeTeam', 'awayTeam']
       - name: bbc_team_id
-        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_team_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -46,7 +46,7 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: bbc_player_id
-        description: "{{ doc('bbc_player_id') }} From raw `urn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
+        description: "{{ doc('bbc_player_id') }}"
         data_tests:
           - not_null
       - name: opta_player_id
@@ -58,14 +58,10 @@ models:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: row_index
-        description: >
-          The line of the formation the player is in, from the back. Row 0 is
-          always the goalkeeper; in the data, row 1 is defenders and wing backs,
-          and higher rows are further forward. From raw `row_index`, cast to
-          integer.
+        description: "The line of the formation the player is in, from the back: 0 is always the goalkeeper, 1 the defenders and wing backs, and higher rows further forward."
         data_tests:
           - not_null
       - name: slot_index
-        description: The player's place within that row, from 0. From raw `slot_index`, cast to integer.
+        description: "The player's place within their line of the formation, from 0."
         data_tests:
           - not_null

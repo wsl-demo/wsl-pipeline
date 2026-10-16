@@ -1,0 +1,67 @@
+models:
+  - name: int_player_match_stats_pivoted
+    description: |
+      Each player's statistics for a match as columns, one row per squad
+      member. This is where BBC's statistic names become the column names used
+      from here to the marts.
+
+      **Grain:** one row per player per match (`opta_match_id`,
+      `opta_player_id`, tested unique).
+
+      **What this step does**
+      - Pivots `stg_bbc_sport__player_match_stats` from one row per statistic
+        to one column per statistic. The statistics are listed by name;
+        staging tests `stat_name` against the same list, so a new or renamed
+        statistic fails that test instead of silently going missing here.
+      - Renames each statistic. Most names translate directly; the one that
+        does not is `totalAssists`, which BBC labels "Chances created" and
+        which becomes `chances_created`.
+      - Casts counts to integers, guarded by
+        `player_count_stats_are_whole_numbers`; the two percentages stay
+        fractional.
+
+      **Not carried over:** `penaltySave` and `penaltyMiss`, which BBC shows
+      only for a player who saved or missed a penalty.
+
+      **Nulls:** a statistic BBC doesn't show for a player is null, not zero.
+      Each column says who it is null for.
+
+      **Used by:** `matchday_squad_members`.
+    data_tests:
+      - unique:
+          column_name: "opta_match_id || '|' || opta_player_id"
+    columns:
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_player_id
+        description: "{{ doc('opta_player_id') }}"
+        data_tests:
+          - not_null
+      - name: minutes_played
+        description: "Minutes the player was on the pitch, from BBC's `minsPlayed`. Never more than 90, so added time is not counted. Null for an unused substitute."
+      - name: goals
+        description: "Goals the player scored, from BBC's `goals`. Penalties count and own goals do not. Null for a starting goalkeeper."
+      - name: assists
+        description: "Assists, from BBC's `assists`. Null for a starting goalkeeper."
+      - name: chances_created
+        description: "From BBC's `totalAssists`, which BBC labels \"Chances created\"; the column follows the label. Never lower than `assists`, so assists count as chances created. Null for a starting goalkeeper."
+      - name: shots_total
+        description: "Shots, on and off target, from BBC's `shotsTotal`. Null for a starting goalkeeper."
+      - name: shots_on_target
+        description: "Shots on target, from BBC's `shotsOnTarget`. Never more than `shots_total`. Null for a starting goalkeeper."
+      - name: saves
+        description: "Shots saved, from BBC's `shotsSaved`. Recorded only for starting goalkeepers; null for everyone else."
+      - name: total_passes
+        description: "Passes, from BBC's `totalPass`."
+      - name: pass_accuracy_percent
+        description: "Share of the player's passes BBC counts as accurate, from 0 to 100, from BBC's `accuratePassPercentage`."
+      - name: total_tackles
+        description: "Tackles, from BBC's `totalTackle`. Null for most starting goalkeepers."
+      - name: tackles_won_percent
+        description: "Share of the player's tackles won, from 0 to 100, from BBC's `wonTacklePercentage`. Null for most starting goalkeepers."
+      - name: fouls_committed
+        description: "Fouls the player committed, from BBC's `fouls`."
+      - name: fouls_won
+        description: "Times the player was fouled, from BBC's `wasFouled`."
