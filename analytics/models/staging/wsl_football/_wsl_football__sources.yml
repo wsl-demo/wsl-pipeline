@@ -1,5 +1,8 @@
 version: 2
 
+# Declares only the raw columns the project uses, each as varchar; see the
+# comment at the top of _bbc_sport__sources.yml for why.
+
 sources:
   - name: wsl_football
     description: >
@@ -11,7 +14,8 @@ sources:
       - name: squad_players
         description: >
           One row per player in a club's current squad, as of the last fetch.
-          A snapshot: a player who leaves a squad disappears from it.
+          A snapshot: a player who leaves a squad disappears from it. Staged by
+          `stg_wsl_football__squad_players`.
         config:
           loaded_at_field: "cast(source_fetched_at as timestamptz)"
           freshness:
@@ -19,20 +23,46 @@ sources:
             error_after: {count: 14, period: day}
         columns:
           - name: optaId
+            data_type: varchar
             description: >
               Opta's player ID. BBC Sport uses the same ID with an `s-` prefix.
               Primary key.
             data_tests:
               - unique
               - not_null
+          - name: mediaFirstName
+            data_type: varchar
+            description: The player's first name.
+          - name: mediaLastName
+            data_type: varchar
+            description: The player's last name.
+          - name: shortName
+            data_type: varchar
+            description: The player's name abbreviated, e.g. "F. Kirby".
           - name: nationality
+            data_type: varchar
+            description: The country the player represents, e.g. "England".
             data_tests:
               - not_null
           - name: nationalityIsoCode
+            data_type: varchar
             description: Three-letter country code, e.g. ENG, DEU. Not strictly ISO.
             data_tests:
               - not_null
           - name: dateOfBirth
+            data_type: varchar
             description: >
               ISO date, written either as `2006-02-03` or `2006-02-03T00:00:00Z`
               depending on the player. Missing for a few players.
+          - name: height
+            data_type: varchar
+            description: Height as a bare number, e.g. `173`; centimetres, judging by the values. Empty for about a third of players.
+          - name: weight
+            data_type: varchar
+            description: Weight as a bare number, e.g. `58`; kilograms, judging by the values. Empty for about half of players.
+          - name: shirtName
+            data_type: varchar
+            description: The name the player is known by, e.g. "Mapi León", "Misa". Present for only 10 players; empty for the rest.
+          - name: source_fetched_at
+            data_type: varchar
+            description: When the scraper fetched the squad page, as an ISO timestamp. This source's `loaded_at_field`.

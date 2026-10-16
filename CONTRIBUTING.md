@@ -19,6 +19,13 @@ them into staging, intermediate and mart models. Run `just` to list commands.
    declare it under `sources` in that source's
    `analytics/models/staging/<source>/_<source>__sources.yml`. All sources share
    the `raw` schema, so table names must be unique across them.
+
+   Declare every raw column a model or test uses, with `data_type: varchar`
+   and a description of what the source sends. dbt reads source schemas from
+   these declarations (`schema_origin: local` in `dbt_project.yml`) rather
+   than from the warehouse, which is what gives the docs CI column lineage
+   without the data. A column used but not declared fails strict compilation
+   with `No column … found`; a column nothing uses isn't declared.
 2. **Write the model** in the layer it belongs to:
 
    | Layer | Folder | Job |

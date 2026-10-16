@@ -52,3 +52,32 @@ Which part of the match the event belongs to, worked out from
 for 106–120 (3 and 4 are the halves of extra time). Added time belongs to the
 period it extends, so `45'+2` is period 1. Null past minute 120.
 {% enddocs %}
+
+{#
+    Raw columns that BBC sends in the same form in several source tables. These
+    say what arrives; the staging columns built from them say what it means.
+#}
+
+{% docs raw_source_match_id %}
+BBC's match page slug, as in the page's URL, e.g. `c04xwd27dr2t`. Only played
+matches have one.
+{% enddocs %}
+
+{% docs raw_match_urn %}
+BBC's match URN: `urn:bbc:sportsdata:football:event:` followed by `s-` and Opta's
+match ID.
+{% enddocs %}
+
+{% docs raw_team_urn %}
+BBC's team URN: `urn:bbc:sportsdata:football:team:` followed by a slug such as
+`arsenal-ladies`.
+{% enddocs %}
+
+{% docs raw_player_urn %}
+BBC's player URN: `urn:bbc:sportsdata:football:player:` followed by `s-` and
+Opta's player ID.
+{% enddocs %}
+
+{% docs raw_time_label %}
+The match minute as displayed: `13'`, or `90'+4` with any added time after the `+`.
+{% enddocs %}

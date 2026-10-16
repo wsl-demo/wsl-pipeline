@@ -23,6 +23,14 @@ clean-targets:
 data_tests:
   +store_failures: true
 
+# Read every source's columns from its YAML declaration instead of querying the
+# warehouse, so strict static analysis (column types and column-level lineage)
+# works where the raw tables don't exist, as in the docs CI. Every declared
+# column therefore needs a data_type; see _bbc_sport__sources.yml.
+sources:
+  analytics:
+    +schema_origin: local
+
 # Configuration cascades by folder. A `config()` block inside a model file is
 # therefore an exception worth noticing, not boilerplate.
 models:
