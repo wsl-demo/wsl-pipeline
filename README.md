@@ -1,5 +1,7 @@
 # WSL pipeline
 
+> Explore all of the data pipeline's transformations in the [dbt docs here](https://wsl-demo.github.io/wsl-pipeline/).
+
 A small, local data pipeline for Women's Super League data. It's a learning
 project: a free, laptop-sized version of the orchestrated ingestion,
 transformation and publishing setup used on a production data team.

@@ -1,26 +1,38 @@
 models:
   - name: stg_bbc_sport__fixtures
-    description: >
-      One row per scheduled match. A match leaves the fixtures page once played,
-      and then appears in stg_bbc_sport__matches under the same match IDs.
+    description: |
+      Matches still to be played, from BBC's fixtures page (raw
+      `bbc_sport.fixtures`). A match leaves the page once it has been played and
+      then appears in `stg_bbc_sport__matches` under the same IDs.
+
+      **Grain:** one row per scheduled match (`opta_match_id`, tested unique).
+
+      **What staging changes**
+      - The match ID arrives without the URN prefix other BBC tables carry, so it
+        is used as sent; the Opta ID is derived from it.
+      - Teams arrive only as Opta IDs (BBC's participant IDs), so there is no BBC
+        team slug here.
+      - The page gives the date without a year ("Sunday 18th October") under a
+        month heading ("2026-10"); staging combines the two into a real date.
+      - Kickoff is a UK local time or "TBC"; staging turns it into a timestamp
+        and flags TBC kickoffs.
+
+      **Not carried over:** `home` and `away` (team names: take them from
+      `stg_bbc_sport__match_teams`) and `description` (a sentence repeating the
+      teams and kickoff time).
     columns:
       - name: bbc_match_id
-        description: >
-          BBC's match ID: `s-` followed by Opta's match ID. The source sends it
-          without the URN prefix that other BBC tables carry. The same ID the
-          match carries in stg_bbc_sport__matches once played.
+        description: "{{ doc('bbc_match_id') }} From raw `event_id` as sent: the fixtures page has no URN prefix to remove."
         data_tests:
           - unique
           - not_null
       - name: opta_match_id
-        description: >
-          Opta's match ID: bbc_match_id without its `s-` prefix. Null if
-          bbc_match_id is not `s-` prefixed. Primary key.
+        description: "{{ doc('opta_match_id') }} Primary key."
         data_tests:
           - unique
           - not_null
       - name: opta_home_team_id
-        description: Opta's ID of the home team, which BBC calls its participant ID.
+        description: "{{ doc('opta_team_id') }} The home team. From raw `home_participant_id` as sent."
         data_tests:
           - not_null
           - relationships:
@@ -28,7 +40,7 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: opta_team_id
       - name: opta_away_team_id
-        description: Opta's ID of the away team, which BBC calls its participant ID.
+        description: "{{ doc('opta_team_id') }} The away team. From raw `away_participant_id` as sent."
         data_tests:
           - not_null
           - relationships:
@@ -36,10 +48,17 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: opta_team_id
       - name: match_date
-        description: Calendar date of the match, in UK local time.
+        description: >
+          The day the match is scheduled for, in UK local time. Built from raw
+          `month` (`2026-10`) and the day number in raw `date_heading`
+          (`Sunday 18th October`): the two-letter ordinal suffix is dropped and
+          the day zero-padded, giving `2026-10-18`.
         data_tests:
           - not_null
       - name: is_kickoff_time_tbc
-        description: True while BBC has not confirmed a kickoff time.
+        description: True when raw `kickoff_time` is `TBC`, i.e. BBC has not confirmed the kickoff yet.
       - name: kicked_off_at
-        description: Kickoff as a timestamp, assuming UK local time. Null while the time is TBC.
+        description: >
+          Scheduled kickoff. `match_date` plus raw `kickoff_time` (`14:00`),
+          read as UK local time (Europe/London) and stored with its time zone.
+          Null while the kickoff is TBC.

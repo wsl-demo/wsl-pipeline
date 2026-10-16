@@ -1,66 +1,117 @@
 models:
   - name: stg_bbc_sport__matches
-    description: One row per match.
+    description: |
+      Played matches, one per BBC match page (raw `bbc_sport.matches`): when and
+      where, which teams, and the score.
+
+      **Grain:** one row per match (`opta_match_id`, tested unique).
+
+      **What staging changes**
+      - IDs: URN prefixes removed; Opta's match ID derived from BBC's. BBC sends
+        Opta's tournament, stage and team IDs as their own columns, which are
+        renamed.
+      - Scores and attendance are cast from text.
+      - Kickoff is built from the date and time the page displays, read as UK
+        local time.
+      - Two text fields become flags (`is_regular_season`, `is_full_time`).
+
+      **Not carried over**
+      - Repeats of a staged column: `tournament_name` and
+        `tournamentDescriptionLabel` (= `tournament_name` here), `home_score` and
+        `away_score` (= the full-time scores), `venue_id` (= `bbc_venue_id`
+        without its `s-`), `stage_urn` (always empty).
+      - Other forms of the kickoff: `startDateTime` (unreliable; see
+        `kicked_off_at`), `time_accessibleTime` (screen-reader text) and
+        `time_timeCertainty` (true for every match).
+      - Team names: `home_fullName`, `home_shortName`, `away_fullName`,
+        `away_shortName` (in `stg_bbc_sport__match_teams`).
+      - Match state, which is the same for every finished match: `status`,
+        `period`, `periodLabel_accessible`, `live`, `home_scoreUnconfirmed`,
+        `away_scoreUnconfirmed`.
+      - Page furniture: `title`, `accessibleEventSummary`, `headerImage`,
+        `lastUpdatedString`, `seoTimestamps_*`, `mediaHeaderData_*`, `type`,
+        `sportDiscipline`, `venue_shortName`, `tournament_thingsGuid`, and
+        `groupedActions` (a JSON summary of the page's goals and assists).
+      - Scrape metadata: `source_month`, `source_fetched_at`, `source_file`.
     columns:
       - name: bbc_match_id
-        description: >
-          BBC's match ID: the match URN without its prefix (BBC calls matches
-          "events"), which is `s-` followed by Opta's match ID. Known before a
-          match is played, so scheduled fixtures use the same ID.
+        description: "{{ doc('bbc_match_id') }} From raw `urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
         data_tests:
           - unique
           - not_null
       - name: opta_match_id
-        description: >
-          Opta's match ID: bbc_match_id without its `s-` prefix. Null if
-          bbc_match_id is not `s-` prefixed. Primary key.
+        description: "{{ doc('opta_match_id') }} Primary key."
         data_tests:
           - unique
           - not_null
       - name: bbc_match_page_id
         description: >
-          BBC's match page slug (e.g. `c040m05309zt`), as sent. Exists only once
-          a match has been played, so fixtures don't have it. Kept for tracing a
-          row back to its BBC page; not used downstream.
+          BBC's match page slug (e.g. `c040m05309zt`). From raw
+          `source_match_id`, as sent. Exists only once a match has been played,
+          so fixtures don't have it. Kept for tracing a row back to its BBC
+          page; not used downstream.
         data_tests:
           - unique
           - not_null
       - name: kicked_off_at
+        description: >
+          Kickoff, as an absolute timestamp. Built from the date and time the
+          match page displays: raw `date` (`Sat 21 Oct 2023`) and
+          `time_displayTimeUK` (`12:30`), read as UK local time by the
+          `uk_local_timestamp` macro, as fixtures are.
+
+
+          Raw `startDateTime` is not used. For 66 of 431 matches it held a
+          different time, sometimes days out (a whole round in October 2023
+          was set to Sunday 14:00). In every one of the 66, the kickoff implied
+          by the substitution timestamps agreed with the displayed time, and so
+          did Opta's feed for the one it covers.
+          `kickoffs_agree_with_substitution_clock` keeps checking this.
         data_tests:
           - not_null
       - name: tournament_name
+        description: "Competition name, e.g. \"Women's Super League\". From raw `tournament_disambiguatedName`, as sent."
         data_tests:
           - not_null
       - name: bbc_tournament_id
-        description: "BBC's tournament ID: the tournament URN without its prefix, a slug such as `womens-super-league`. Not an Opta ID."
+        description: "BBC's tournament ID: a slug, `womens-super-league`. Not an Opta ID. From raw `tournament_urn`, with the `urn:bbc:sportsdata:football:tournament:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_tournament_id
-        description: Opta's competition ID, which BBC sends beside the URN.
+        description: Opta's competition ID (`6vq8j5p3av14nr3iuyi4okhjt` for the WSL). From raw `tournament_id`, as sent.
         data_tests:
           - not_null
       - name: opta_stage_id
         description: >
           Opta's stage ID. Each season's league is one "Regular Season" stage,
-          so it identifies the season in Opta's terms.
+          so it identifies the season in Opta's terms. From raw `stage_id`, as
+          sent.
         data_tests:
           - not_null
       - name: venue_name
+        description: >
+          Stadium name as BBC showed it for this match. From raw `venue_name`,
+          as sent. A venue can appear under more than one name over time
+          (three venues do), so group by `bbc_venue_id`, not by name.
         data_tests:
           - not_null
       - name: bbc_venue_id
         description: >
-          BBC's venue ID: the venue URN without its prefix, `s-` followed by an
-          ID that is probably Opta's but unconfirmed.
+          BBC's venue ID: `s-` followed by an ID that is probably Opta's but
+          unconfirmed. From raw `venue_urn`, with the
+          `urn:bbc:sportsdata:football:venue:` prefix removed by `strip_urn`.
         data_tests:
           - not_null
       - name: attendance_count
+        description: Crowd size. From raw `attendance_value`, cast to integer. Null for the 3 matches BBC gives no attendance for.
       # is_regular_season and is_full_time are CASE ... ELSE false, so they are
       # non-nullable by construction and a not_null test could never fail.
       - name: is_regular_season
+        description: True when raw `stage_name` is `Regular Season`, which it is for every match so far.
       - name: is_full_time
+        description: True when raw `periodLabel_value` is `FT`, which it is for every match so far (BBC's results pages only list finished matches).
       - name: bbc_home_team_id
-        description: "BBC's ID of the home team: a slug such as `arsenal-ladies`. Not an Opta ID."
+        description: "{{ doc('bbc_team_id') }} The home team. From raw `home_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
           - relationships:
@@ -68,7 +119,7 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: opta_home_team_id
-        description: Opta's ID of the home team, which BBC calls its participant ID.
+        description: "{{ doc('opta_team_id') }} The home team. From raw `home_id`, as sent."
         data_tests:
           - not_null
           - relationships:
@@ -76,13 +127,15 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: opta_team_id
       - name: home_score_halftime
+        description: Home goals at half-time. From raw `home_runningScores_halftime`, cast to integer.
         data_tests:
           - not_null
       - name: home_score_fulltime
+        description: Home goals at full time, own goals included. From raw `home_runningScores_fulltime`, cast to integer.
         data_tests:
           - not_null
       - name: bbc_away_team_id
-        description: "BBC's ID of the away team: a slug such as `arsenal-ladies`. Not an Opta ID."
+        description: "{{ doc('bbc_team_id') }} The away team. From raw `away_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
           - relationships:
@@ -90,7 +143,7 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: opta_away_team_id
-        description: Opta's ID of the away team, which BBC calls its participant ID.
+        description: "{{ doc('opta_team_id') }} The away team. From raw `away_id`, as sent."
         data_tests:
           - not_null
           - relationships:
@@ -98,13 +151,15 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: opta_team_id
       - name: away_score_halftime
+        description: Away goals at half-time. From raw `away_runningScores_halftime`, cast to integer.
         data_tests:
           - not_null
       - name: away_score_fulltime
+        description: Away goals at full time, own goals included. From raw `away_runningScores_fulltime`, cast to integer.
         data_tests:
           - not_null
       - name: winner_side
-        description: Which side won, or `draw`, as reported by the source.
+        description: "Which side won, or `draw`. From raw `winner`, as sent."
         data_tests:
           - not_null
           - accepted_values:

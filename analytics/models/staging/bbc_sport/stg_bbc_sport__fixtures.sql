@@ -35,8 +35,6 @@ SELECT
     kickoff_time_local IS NULL AS is_kickoff_time_tbc,
     CASE
         WHEN kickoff_time_local IS NOT NULL
-        THEN CAST(
-            CAST(match_date AS varchar) || ' ' || kickoff_time_local AS timestamp
-        ) AT TIME ZONE 'Europe/London'
+        THEN {{ uk_local_timestamp('match_date', 'kickoff_time_local') }}
     END AS kicked_off_at
 FROM parsed

@@ -1,13 +1,45 @@
 models:
   - name: stg_bbc_sport__match_actions
-    description: Actions players performed during a match.
+    description: |
+      The goals and sendings-off in each played match, as listed under each
+      team on BBC's match page (raw `bbc_sport.match_actions`).
+
+      **Grain:** one row per action (`bbc_match_id`, `bbc_team_id`,
+      `action_index`, `sub_index`, tested unique). BBC numbers the players who
+      acted for each side (`action_index`) and each of a player's actions
+      (`sub_index`).
+
+      **What staging changes**
+      - IDs: URN prefixes removed; Opta IDs derived from BBC's.
+      - Raw `type` becomes one flag per kind of action.
+      - The displayed minute (`90'+4`) becomes a regulation minute, added
+        minutes and a period.
+
+      **Not carried over:** `source_side` (`bbc_team_id` already identifies
+      the side), `actionType` (`goal` or `card`, implied by the flags),
+      `playerName` (in `stg_bbc_sport__match_players`), `typeLabel_*` and
+      `timeLabel_accessible` (display copies of `type` and the minute), and
+      `source_match_id` (BBC's page slug, on `stg_bbc_sport__matches`).
+
+      **Caveats**
+      - **Own goals** are listed under the team they count for, so their
+        `bbc_team_id` is not the scorer's team.
+      - **Goal flags don't overlap:** `is_goal` is only for goals that are
+        neither penalties nor own goals. To count every goal, use
+        `is_goal OR is_penalty OR is_own_goal`; that total matches every
+        full-time score.
+      - Single yellow cards are not here; they are in
+        `stg_bbc_sport__match_player_cards`.
+    data_tests:
+      - unique:
+          column_name: "bbc_match_id || '|' || bbc_team_id || '|' || action_index || '|' || sub_index"
     columns:
       - name: bbc_match_id
-        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
+        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        description: "{{ doc('opta_match_id') }} Foreign key to `stg_bbc_sport__matches`."
         data_tests:
           - not_null
           - relationships:
@@ -15,7 +47,7 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: bbc_team_id
-        description: "BBC's team ID: the team URN without its prefix, a slug such as `arsenal-ladies`. Not an Opta ID."
+        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`. For an own goal, the team the goal counts for, not the scorer's team."
         data_tests:
           - not_null
           - relationships:
@@ -23,11 +55,11 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: bbc_player_id
-        description: "BBC's player ID: the player URN without its prefix, `s-` followed by Opta's player ID."
+        description: "{{ doc('bbc_player_id') }} From raw `playerUrn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_player_id
-        description: "Opta's player ID: bbc_player_id without its `s-` prefix. Null if bbc_player_id is not `s-` prefixed."
+        description: "{{ doc('opta_player_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -35,18 +67,27 @@ models:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: action_index
+        description: Position of the acting player in their side's list, from 0. From raw `action_index`, cast to integer.
       - name: sub_index
+        description: Position of the action among that player's actions, from 0. From raw `sub_index`, cast to integer.
+      # The five action flags are CASE ... ELSE false, so they are
+      # non-nullable by construction and a not_null test could never fail.
       - name: is_own_goal
+        description: True when raw `type` is `Own Goal`.
       - name: is_goal
+        description: True when raw `type` is `Goal`. False for penalties and own goals, which have their own flags.
       - name: is_direct_red
+        description: True when raw `type` is `Red Card`, a straight red.
       - name: is_second_yellow
+        description: True when raw `type` is `Two Yellow Cards`, a red for a second booking.
       - name: is_penalty
+        description: True when raw `type` is `Penalty`, a penalty scored.
       - name: regulation_time_minutes
+        description: "{{ doc('regulation_time_minutes') }}"
       - name: injury_time_minutes
+        description: "{{ doc('injury_time_minutes') }}"
       - name: period
-        description: >
-          1 and 2 are the halves of normal time, 3 and 4 the halves of extra
-          time.
+        description: "{{ doc('match_period') }}"
         data_tests:
           # `period` is an integer, so the values must not be quoted. Without
           # quote: false the test compiles to `not in ('1','2','3','4')` and

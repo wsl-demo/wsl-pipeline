@@ -30,3 +30,17 @@
 {% macro uk_local_date(timestamp_column) -%}
     CAST({{ timestamp_column }} AT TIME ZONE 'Europe/London' AS date)
 {%- endmacro %}
+
+{#
+    The inverse of `uk_local_date`: a date plus an `HH:MM` wall-clock time in
+    the UK, as an absolute timestamp. BBC shows kickoffs this way, and British
+    football kicks off in UK local time, so the time zone comes from the
+    calendar (GMT or BST) rather than from the source.
+
+        2026-10-18, '14:00'  ->  2026-10-18 13:00 UTC   (BST)
+        2026-11-01, '12:00'  ->  2026-11-01 12:00 UTC   (GMT)
+#}
+{% macro uk_local_timestamp(date_column, time_column) -%}
+    CAST(CAST({{ date_column }} AS varchar) || ' ' || {{ time_column }} AS timestamp)
+        AT TIME ZONE 'Europe/London'
+{%- endmacro %}

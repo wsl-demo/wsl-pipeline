@@ -22,7 +22,20 @@ sources:
               - unique
               - not_null
           - name: startDateTime
-            description: Timestamp TZ string of scheduled start time.
+            description: >
+              An ISO 8601 UTC timestamp BBC labels as the start time, e.g.
+              `2023-10-21T11:30:00.000Z`. Unreliable: for 66 of 431 matches it
+              disagrees with the kickoff the page displays, and the
+              substitution timestamps show the displayed one is right. Not used
+              by staging.
+            data_tests:
+              - not_null
+          - name: date
+            description: The match date as displayed, e.g. `Sat 21 Oct 2023`. With `time_displayTimeUK`, the source of `kicked_off_at`.
+            data_tests:
+              - not_null
+          - name: time_displayTimeUK
+            description: The kickoff time as displayed, in UK local time, e.g. `12:30`.
             data_tests:
               - not_null
           - name: periodLabel_value

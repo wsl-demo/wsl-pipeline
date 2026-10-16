@@ -1,17 +1,30 @@
 models:
   - name: stg_bbc_sport__match_officials
-    description: Officials assigned to a match.
+    description: |
+      The referee of each played match (raw `bbc_sport.match_officials`). BBC
+      lists only the referee: every raw row has `type` = `Referee`, so there is
+      one row per match.
+
+      **Grain:** one row per official per match (`bbc_match_id`,
+      `bbc_official_id`, tested unique).
+
+      **What staging changes:** URN prefix removed from the official's ID;
+      Opta's match ID derived from BBC's; columns renamed.
+
+      **Not carried over:** `type` and `official_index` (always `Referee` and
+      0), `shortFirstName` and `shortLastName` (abbreviated names), and
+      `source_match_id` (BBC's page slug, on `stg_bbc_sport__matches`).
     data_tests:
       # An official is assigned to a match only 1 time
       - unique:
           column_name: "bbc_match_id || '|' || bbc_official_id"
     columns:
       - name: bbc_match_id
-        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
+        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        description: "{{ doc('opta_match_id') }} Foreign key to `stg_bbc_sport__matches`."
         data_tests:
           - not_null
           - relationships:
@@ -20,18 +33,19 @@ models:
                 field: opta_match_id
       - name: bbc_official_id
         description: >
-          BBC's official ID: the official URN without its prefix. Unlike player
-          and match URNs it has no `s-`. It looks like an Opta ID but is
-          unconfirmed.
+          BBC's official ID. From raw `id`, with the
+          `urn:bbc:sportsdata:football:official:` prefix removed by
+          `strip_urn`. Unlike player and match URNs it has no `s-`; it looks
+          like an Opta ID but is unconfirmed.
         data_tests:
           - not_null
       - name: bbc_official_op_id
-        description: >
-          A short numeric ID BBC sends for a handful of officials. Mostly null;
-          what issues it is unconfirmed.
+        description: A short numeric ID BBC sends for 4 of the 45 referees, null for the rest; what issues it is unconfirmed. From raw `opId`, as sent.
       - name: first_name
+        description: From raw `firstName`, as sent.
         data_tests:
           - not_null
       - name: last_name
+        description: From raw `lastName`, as sent.
         data_tests:
           - not_null

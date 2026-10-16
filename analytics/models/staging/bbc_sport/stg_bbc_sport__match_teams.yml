@@ -1,17 +1,32 @@
 models:
   - name: stg_bbc_sport__match_teams
-    description: One row per team per match, with the team's formation and manager.
+    description: |
+      The two teams in each played match, with their names, formation and
+      manager (raw `bbc_sport.match_teams`). The one table that carries both of
+      a team's IDs, so it is how other BBC tables, which only have the BBC slug,
+      get to Opta's team ID.
+
+      **Grain:** one row per team per match (`bbc_match_id`, `source_side`,
+      tested unique).
+
+      **What staging changes:** URN prefixes removed; Opta's match ID derived
+      from BBC's; columns renamed. Nothing is cast or recoded.
+
+      **Not carried over:** `source_match_id` (BBC's page slug, on
+      `stg_bbc_sport__matches`), `formation_layout` and `formation_accessible`
+      (the formation written as `433` and for screen readers), and
+      `hasPlayerStats` (true for every team).
     data_tests:
       # A team appears once per side of a fixture
       - unique:
           column_name: "bbc_match_id || '|' || source_side"
     columns:
       - name: bbc_match_id
-        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
+        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        description: "{{ doc('opta_match_id') }} Foreign key to `stg_bbc_sport__matches`."
         data_tests:
           - not_null
           - relationships:
@@ -19,31 +34,35 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: source_side
+        description: "`homeTeam` or `awayTeam`. From raw `source_side`, as sent. Says the same as `alignment`, spelled differently."
         data_tests:
           - accepted_values:
               arguments:
                 values: ['homeTeam', 'awayTeam']
       - name: bbc_team_id
-        description: "BBC's team ID: the team URN without its prefix, a slug such as `arsenal-ladies`. Not an Opta ID."
+        description: "BBC's team ID: a slug such as `arsenal-ladies`. Not an Opta ID. From raw `urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_team_id
         description: >
-          Opta's team ID, which BBC calls its participant ID. Stable per team
-          across matches, and the key teams carry in the marts. Matches the
-          contestantId in Opta's standings feed for all 14 WSL clubs.
+          {{ doc('opta_team_id') }} From raw `id`, as sent. Matched the
+          contestantId in Opta's standings feed for all 14 WSL clubs (October
+          2026).
         data_tests:
           - not_null
       - name: team_name
-        description: Full team name, e.g. "Arsenal Women".
+        description: Full team name as BBC writes it, e.g. "Tottenham Hotspur" (no "Women"). From raw `name_fullName`, as sent.
         data_tests:
           - not_null
       - name: team_short_name
+        description: Short name, e.g. "Spurs", "Man City". From raw `name_shortName`, as sent.
       - name: team_code
-        description: Three-letter abbreviation.
+        description: Three-letter code, e.g. "TOT". From raw `name_code`, as sent.
       - name: alignment
+        description: "`home` or `away`. From raw `alignment`, as sent. Says the same as `source_side`."
       - name: formation
-        description: Formation as written by the source, e.g. "4-2-3-1".
+        description: Starting formation as BBC writes it, with spaces around the dashes, e.g. "4 - 2 - 3 - 1". From raw `formation_value`, as sent.
       - name: bbc_manager_id
-        description: BBC's ID of the team's manager. Stable per manager; unconfirmed as an Opta ID.
+        description: BBC's ID of the team's manager for this match. Stable per manager; unconfirmed as an Opta ID. From raw `manager_id`, as sent.
       - name: manager_name
+        description: The manager's full name. From raw `manager_name_full`, as sent.

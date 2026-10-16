@@ -1,13 +1,36 @@
 models:
   - name: stg_bbc_sport__match_player_cards
-    description: Cards players were given during a match.
+    description: |
+      Every card shown in each played match: yellows, second yellows and
+      straight reds (raw `bbc_sport.match_player_cards`).
+
+      **Grain:** one row per card. **No staged column identifies a card:** the
+      raw table is unique on match, player and `card_index`, which staging
+      does not carry over. A player with two cards in a match (20 so far) has
+      two rows that only their time tells apart.
+
+      **What staging changes**
+      - IDs: URN prefixes removed; Opta IDs derived from BBC's.
+      - Raw `type` becomes one flag per kind of card.
+      - The displayed minute (`90'+4`) becomes a regulation minute, added
+        minutes and a period.
+
+      **Not carried over:** `card_index` (0 for a player's first card in the
+      match, 1 for a second), `timeLabel_accessible` (screen-reader copy of
+      the minute), and `source_match_id` (BBC's page slug, on
+      `stg_bbc_sport__matches`).
+
+      **Reading the cards:** a player sent off for a second booking has two
+      rows, the first yellow (`is_yellow_card`) and then the second
+      (`is_second_yellow`). Second yellows and straight reds also appear in
+      `stg_bbc_sport__match_actions`.
     columns:
       - name: bbc_match_id
-        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
+        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        description: "{{ doc('opta_match_id') }} Foreign key to `stg_bbc_sport__matches`."
         data_tests:
           - not_null
           - relationships:
@@ -15,11 +38,11 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: bbc_player_id
-        description: "BBC's player ID: the player URN without its prefix, `s-` followed by Opta's player ID."
+        description: "{{ doc('bbc_player_id') }} From raw `playerUrn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_player_id
-        description: "Opta's player ID: bbc_player_id without its `s-` prefix. Null if bbc_player_id is not `s-` prefixed."
+        description: "{{ doc('opta_player_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -27,7 +50,7 @@ models:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: bbc_team_id
-        description: "BBC's team ID: the team URN without its prefix, a slug such as `arsenal-ladies`. Not an Opta ID."
+        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`. The card's recipient's team."
         data_tests:
           - not_null
           - relationships:
@@ -37,14 +60,17 @@ models:
       # The three card flags are CASE ... ELSE false, so they are non-nullable
       # by construction and a not_null test could never fail.
       - name: is_yellow_card
+        description: True when raw `type` is `Yellow Card`, a booking that did not by itself send the player off.
       - name: is_second_yellow
+        description: True when raw `type` is `Two Yellow Cards`, the second booking that sends a player off.
       - name: is_direct_red
+        description: True when raw `type` is `Red Card`, a straight red.
       - name: regulation_time_minutes
+        description: "{{ doc('regulation_time_minutes') }}"
       - name: injury_time_minutes
+        description: "{{ doc('injury_time_minutes') }}"
       - name: period
-        description: >
-          1 and 2 are the halves of normal time, 3 and 4 the halves of extra
-          time.
+        description: "{{ doc('match_period') }}"
         data_tests:
           - accepted_values:
               arguments:

@@ -9,15 +9,7 @@
 #}
 
 {% macro match_time_part(column_name, part) %}
-  {{ return(adapter.dispatch('match_time_part')(column_name, part)) }}
-{% endmacro %}
-
-{% macro default__match_time_part(column_name, part) %}
   split_part(replace({{ column_name }}, '''', ''), '+', {{ part }})
-{% endmacro %}
-
-{% macro clickhouse__match_time_part(column_name, part) %}
-  splitByChar('+', replaceAll({{ column_name }}, '''', ''))[{{ part }}]
 {% endmacro %}
 
 {% macro match_regulation_time(column_name) %}

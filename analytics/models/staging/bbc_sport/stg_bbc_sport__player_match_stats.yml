@@ -1,19 +1,34 @@
 models:
   - name: stg_bbc_sport__player_match_stats
-    description: >
-      One row per player per match per statistic. The source is long, and this
-      model keeps it that way; int_player_match_stats__pivoted reshapes it to
-      one row per appearance.
+    description: |
+      Each player's statistics for each match, in the source's long shape:
+      one row per statistic (raw `bbc_sport.player_match_stats`).
+      `int_player_match_stats__pivoted` reshapes it to one row per appearance.
+
+      **Grain:** one row per player per match per statistic (`bbc_match_id`,
+      `bbc_player_id`, `stat_name`, tested unique).
+
+      **What staging changes:** URN prefixes removed; Opta IDs derived from
+      BBC's; `stat_value` and `stat_index` cast from text; columns renamed.
+
+      **Not carried over:** `source_match_id` (BBC's page slug, on
+      `stg_bbc_sport__matches`).
+
+      **Which statistics a player has varies.** Every squad member has some
+      rows, but a statistic is missing rather than zero when BBC doesn't
+      show it: `minsPlayed` is missing for unused substitutes, `shotsSaved`
+      exists only for the starting goalkeepers, and `penaltySave` and `penaltyMiss` only
+      when they happened.
     data_tests:
       - unique:
           column_name: "bbc_match_id || '|' || bbc_player_id || '|' || stat_name"
     columns:
       - name: bbc_match_id
-        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
+        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        description: "{{ doc('opta_match_id') }} Foreign key to `stg_bbc_sport__matches`."
         data_tests:
           - not_null
           - relationships:
@@ -21,7 +36,7 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: bbc_team_id
-        description: "BBC's team ID: the team URN without its prefix, a slug such as `arsenal-ladies`. Not an Opta ID."
+        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
           - relationships:
@@ -29,11 +44,11 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: bbc_player_id
-        description: "BBC's player ID: the player URN without its prefix, `s-` followed by Opta's player ID."
+        description: "{{ doc('bbc_player_id') }} From raw `playerUrn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_player_id
-        description: "Opta's player ID: bbc_player_id without its `s-` prefix. Null if bbc_player_id is not `s-` prefixed."
+        description: "{{ doc('opta_player_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -41,9 +56,9 @@ models:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: stat_index
-        description: The source's display order for the statistic.
+        description: Where the statistic comes in the list BBC shows for this player, from 0. Varies by player, because each list holds only the statistics that player has. From raw `stat_index`, cast to integer.
       - name: stat_name
-        description: Machine name of the statistic, e.g. "minsPlayed".
+        description: Machine name of the statistic, e.g. "minsPlayed". From raw `dataField`, as sent.
         data_tests:
           - not_null
           # Guards the pivot in int_player_match_stats__pivoted: a new or
@@ -67,10 +82,12 @@ models:
                   - penaltySave
                   - penaltyMiss
       - name: stat_label
-        description: Human-readable label the source shows, e.g. "Minutes played".
+        description: The label BBC shows, e.g. "Minutes played", "Chances created" (for `totalAssists`). From raw `rowLabel`, as sent.
       - name: stat_value
         description: >
-          The statistic's value. Numeric across all current statistics, so it is
-          cast to double here rather than left as text.
+          The statistic's value. From raw `statValue`, cast to double: every
+          statistic is numeric, the two percentages
+          (`accuratePassPercentage`, `wonTacklePercentage`) fractional and the
+          rest whole numbers.
         data_tests:
           - not_null

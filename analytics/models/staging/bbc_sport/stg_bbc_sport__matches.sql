@@ -8,7 +8,12 @@ WITH parsed AS (
         -- BBC's match page slug, as sent. Staged for traceability only; nothing
         -- downstream needs it.
         "source_match_id" AS bbc_match_page_id,
-        {{ parse_iso_timestamp("startDateTime") }} AS kicked_off_at,
+        -- Kickoff as the match page displays it: `Sat 21 Oct 2023` and `12:30`,
+        -- in UK local time. Raw `startDateTime` is not used: for about one
+        -- match in seven it holds a different time, sometimes days out, and the
+        -- substitution timestamps side with the displayed time every time.
+        CAST(strptime("date", '%a %d %b %Y') AS date) AS kickoff_date_local,
+        "time_displayTimeUK" AS kickoff_time_local,
         "tournament_disambiguatedName" AS tournament_name,
         -- The tournament URN's tail is a BBC slug (`womens-super-league`); BBC
         -- sends Opta's competition ID beside it as its own column.
@@ -38,7 +43,7 @@ SELECT
     bbc_match_id,
     {{ analytics.opta_id_from_bbc_id('bbc_match_id') }} AS opta_match_id,
     bbc_match_page_id,
-    kicked_off_at,
+    {{ uk_local_timestamp('kickoff_date_local', 'kickoff_time_local') }} AS kicked_off_at,
     tournament_name,
     bbc_tournament_id,
     opta_tournament_id,

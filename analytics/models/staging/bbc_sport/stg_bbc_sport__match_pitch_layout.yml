@@ -1,17 +1,30 @@
 models:
   - name: stg_bbc_sport__match_pitch_layout
-    description: Player's position in the formation at the start of a match.
+    description: |
+      Where each starter stood in their team's formation at kickoff, as BBC
+      draws it on the pitch graphic (raw `bbc_sport.match_pitch_layout`). Only
+      the starting eleven, so 22 rows per match.
+
+      **Grain:** one row per starter per match (`bbc_match_id`,
+      `bbc_player_id`, tested unique).
+
+      **What staging changes:** URN prefixes removed; Opta IDs derived from
+      BBC's; row and slot cast from text.
+
+      **Not carried over:** `source_match_id` (BBC's page slug, on
+      `stg_bbc_sport__matches`), and `shirtNumber`, `name` and
+      `accessibleText`, which repeat what `stg_bbc_sport__match_players` has.
     data_tests:
       # A player is only in 1 position in the starting formation
       - unique:
           column_name: "bbc_match_id || '|' || bbc_player_id"
     columns:
       - name: bbc_match_id
-        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
+        description: "{{ doc('bbc_match_id') }} From raw `match_urn`, with the `urn:bbc:sportsdata:football:event:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        description: "{{ doc('opta_match_id') }} Foreign key to `stg_bbc_sport__matches`."
         data_tests:
           - not_null
           - relationships:
@@ -19,13 +32,13 @@ models:
                 to: ref('stg_bbc_sport__matches')
                 field: opta_match_id
       - name: source_side
-        description: Which side of the fixture the slot belongs to.
+        description: "`homeTeam` or `awayTeam`: which team's formation the slot belongs to. From raw `source_side`, as sent."
         data_tests:
           - accepted_values:
               arguments:
                 values: ['homeTeam', 'awayTeam']
       - name: bbc_team_id
-        description: "BBC's ID of the team whose formation this slot belongs to: a slug such as `arsenal-ladies`. Not an Opta ID."
+        description: "{{ doc('bbc_team_id') }} From raw `team_urn`, with the `urn:bbc:sportsdata:football:team:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
           - relationships:
@@ -33,11 +46,11 @@ models:
                 to: ref('stg_bbc_sport__match_teams')
                 field: bbc_team_id
       - name: bbc_player_id
-        description: "BBC's player ID: the player URN without its prefix, `s-` followed by Opta's player ID."
+        description: "{{ doc('bbc_player_id') }} From raw `urn`, with the `urn:bbc:sportsdata:football:player:` prefix removed by `strip_urn`."
         data_tests:
           - not_null
       - name: opta_player_id
-        description: "Opta's player ID: bbc_player_id without its `s-` prefix. Null if bbc_player_id is not `s-` prefixed."
+        description: "{{ doc('opta_player_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -45,8 +58,14 @@ models:
                 to: ref('stg_bbc_sport__match_players')
                 field: opta_player_id
       - name: row_index
+        description: >
+          The line of the formation the player is in, from the back. Row 0 is
+          always the goalkeeper; in the data, row 1 is defenders and wing backs,
+          and higher rows are further forward. From raw `row_index`, cast to
+          integer.
         data_tests:
           - not_null
       - name: slot_index
+        description: The player's place within that row, from 0. From raw `slot_index`, cast to integer.
         data_tests:
           - not_null
