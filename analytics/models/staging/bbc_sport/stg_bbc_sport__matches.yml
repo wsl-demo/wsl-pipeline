@@ -2,11 +2,26 @@ models:
   - name: stg_bbc_sport__matches
     description: One row per match.
     columns:
-      - name: match_id
+      - name: bbc_match_id
         description: >
-          ID of the match: BBC's match URN without its prefix (BBC calls matches
-          "events"). Known before a match is played, so scheduled fixtures use
-          the same ID. Primary key.
+          BBC's match ID: the match URN without its prefix (BBC calls matches
+          "events"), which is `s-` followed by Opta's match ID. Known before a
+          match is played, so scheduled fixtures use the same ID.
+        data_tests:
+          - unique
+          - not_null
+      - name: opta_match_id
+        description: >
+          Opta's match ID: bbc_match_id without its `s-` prefix. Null if
+          bbc_match_id is not `s-` prefixed. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: bbc_match_page_id
+        description: >
+          BBC's match page slug (e.g. `c040m05309zt`), as sent. Exists only once
+          a match has been played, so fixtures don't have it. Kept for tracing a
+          row back to its BBC page; not used downstream.
         data_tests:
           - unique
           - not_null
@@ -16,13 +31,27 @@ models:
       - name: tournament_name
         data_tests:
           - not_null
-      - name: tournament_id
+      - name: bbc_tournament_id
+        description: "BBC's tournament ID: the tournament URN without its prefix, a slug such as `womens-super-league`. Not an Opta ID."
+        data_tests:
+          - not_null
+      - name: opta_tournament_id
+        description: Opta's competition ID, which BBC sends beside the URN.
+        data_tests:
+          - not_null
+      - name: opta_stage_id
+        description: >
+          Opta's stage ID. Each season's league is one "Regular Season" stage,
+          so it identifies the season in Opta's terms.
         data_tests:
           - not_null
       - name: venue_name
         data_tests:
           - not_null
-      - name: venue_id
+      - name: bbc_venue_id
+        description: >
+          BBC's venue ID: the venue URN without its prefix, `s-` followed by an
+          ID that is probably Opta's but unconfirmed.
         data_tests:
           - not_null
       - name: attendance_count
@@ -30,14 +59,15 @@ models:
       # non-nullable by construction and a not_null test could never fail.
       - name: is_regular_season
       - name: is_full_time
-      - name: home_team_id
+      - name: bbc_home_team_id
+        description: "BBC's ID of the home team: a slug such as `arsenal-ladies`. Not an Opta ID."
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_teams')
-                field: team_id
-      - name: home_opta_team_id
+                field: bbc_team_id
+      - name: opta_home_team_id
         description: Opta's ID of the home team, which BBC calls its participant ID.
         data_tests:
           - not_null
@@ -51,14 +81,15 @@ models:
       - name: home_score_fulltime
         data_tests:
           - not_null
-      - name: away_team_id
+      - name: bbc_away_team_id
+        description: "BBC's ID of the away team: a slug such as `arsenal-ladies`. Not an Opta ID."
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_teams')
-                field: team_id
-      - name: away_opta_team_id
+                field: bbc_team_id
+      - name: opta_away_team_id
         description: Opta's ID of the away team, which BBC calls its participant ID.
         data_tests:
           - not_null

@@ -2,9 +2,9 @@
 -- points each side earned. The logic lives in int_matches_unioned_with_fixtures;
 -- this is the published, contracted entity.
 SELECT
-    match_id,
-    home_opta_team_id,
-    away_opta_team_id,
+    opta_match_id,
+    opta_home_team_id,
+    opta_away_team_id,
     match_status,
     season,
     winner_side,

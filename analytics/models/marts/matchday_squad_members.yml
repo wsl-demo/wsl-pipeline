@@ -9,17 +9,17 @@ models:
         enforced: true
     data_tests:
       - unique:
-          column_name: "match_id || '|' || opta_player_id"
+          column_name: "opta_match_id || '|' || opta_player_id"
     columns:
-      - name: match_id
+      - name: opta_match_id
         data_type: varchar
-        description: ID of the match (BBC match URN without its prefix). Foreign key to matches.
+        description: Opta's match ID. Foreign key to matches.
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('matches')
-                field: match_id
+                field: opta_match_id
       - name: opta_player_id
         data_type: varchar
         description: Opta's player ID. Foreign key to players.

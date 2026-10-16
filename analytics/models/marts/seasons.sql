@@ -4,9 +4,9 @@
 -- The current season is the latest one present, which is deterministic and does
 -- not depend on the day the build runs.
 WITH team_seasons AS (
-    SELECT season, home_opta_team_id AS opta_team_id FROM {{ ref('matches') }}
+    SELECT season, opta_home_team_id AS opta_team_id FROM {{ ref('matches') }}
     UNION
-    SELECT season, away_opta_team_id FROM {{ ref('matches') }}
+    SELECT season, opta_away_team_id FROM {{ ref('matches') }}
 ),
 
 team_counts AS (

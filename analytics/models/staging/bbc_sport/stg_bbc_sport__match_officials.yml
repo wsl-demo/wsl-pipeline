@@ -4,16 +4,31 @@ models:
     data_tests:
       # An official is assigned to a match only 1 time
       - unique:
-          column_name: "match_id || '|' || official_id"
+          column_name: "bbc_match_id || '|' || bbc_official_id"
     columns:
-      - name: match_id
-        description: ID of the match (BBC match URN without its prefix). Foreign key.
+      - name: bbc_match_id
+        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
         data_tests:
           - not_null
-      - name: official_id
-        description: ID of the official (BBC official URN without its prefix).
+      - name: opta_match_id
+        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
         data_tests:
           - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__matches')
+                field: opta_match_id
+      - name: bbc_official_id
+        description: >
+          BBC's official ID: the official URN without its prefix. Unlike player
+          and match URNs it has no `s-`. It looks like an Opta ID but is
+          unconfirmed.
+        data_tests:
+          - not_null
+      - name: bbc_official_op_id
+        description: >
+          A short numeric ID BBC sends for a handful of officials. Mostly null;
+          what issues it is unconfirmed.
       - name: first_name
         data_tests:
           - not_null

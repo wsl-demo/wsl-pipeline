@@ -46,31 +46,32 @@ unit_tests:
           - {match_urn: "urn:bbc:sportsdata:football:event:s-m1", team_urn: "urn:bbc:sportsdata:football:team:arsenal-ladies", urn: "urn:other:player:s-p3", source_player_list: "substitutes", position: "Substitute"}
     expect:
       rows:
-        - {match_id: "s-m1", team_id: "arsenal-ladies", player_id: "s-p1", opta_player_id: "p1", is_starter: true, position: "Striker", substituted_off_minute: 68, substituted_off_regulation_time: 68, substituted_off_injury_time: 0, substituted_off_time_seconds: 4050}
-        - {match_id: "s-m1", team_id: "arsenal-ladies", player_id: "s-p2", opta_player_id: "p2", is_starter: true, position: "Defender", substituted_off_minute: 47, substituted_off_regulation_time: 45, substituted_off_injury_time: 2, substituted_off_time_seconds: 2770}
-        - {match_id: "s-m1", team_id: "arsenal-ladies", player_id: "urn:other:player:s-p3", is_starter: false, position: null, substituted_off_minute: null, substituted_off_regulation_time: null, substituted_off_injury_time: null}
+        - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "arsenal-ladies", bbc_player_id: "s-p1", opta_player_id: "p1", is_starter: true, position: "Striker", substituted_off_minute: 68, substituted_off_regulation_time: 68, substituted_off_injury_time: 0, substituted_off_time_seconds: 4050}
+        - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "arsenal-ladies", bbc_player_id: "s-p2", opta_player_id: "p2", is_starter: true, position: "Defender", substituted_off_minute: 47, substituted_off_regulation_time: 45, substituted_off_injury_time: 2, substituted_off_time_seconds: 2770}
+        - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "arsenal-ladies", bbc_player_id: "urn:other:player:s-p3", opta_player_id: null, is_starter: false, position: null, substituted_off_minute: null, substituted_off_regulation_time: null, substituted_off_injury_time: null}
 
   - name: fixtures_dates_and_kickoff
     description: >
       The date is rebuilt from `month` plus the day number (ordinal suffixes of
       every kind), kickoff is read as UK local time across the daylight-saving
-      change, and TBC kickoffs become null rather than failing.
+      change, TBC kickoffs become null rather than failing, and the Opta match
+      ID is the event ID without its `s-`.
     model: stg_bbc_sport__fixtures
     given:
       - input: source('bbc_sport', 'fixtures')
         rows:
           # British Summer Time: 14:00 local is 13:00 UTC
-          - {month: "2026-10", event_id: "urn:bbc:sportsdata:football:event:s-f1", date_heading: "Sunday 18th October", kickoff_time: "14:00", home_participant_id: "h", away_participant_id: "a"}
+          - {month: "2026-10", event_id: "s-f1", date_heading: "Sunday 18th October", kickoff_time: "14:00", home_participant_id: "h", away_participant_id: "a"}
           # winter: local equals UTC; and the 1st, 2nd, 3rd, 22nd suffixes
-          - {month: "2026-11", event_id: "urn:bbc:sportsdata:football:event:s-f2", date_heading: "Sunday 1st November", kickoff_time: "12:00", home_participant_id: "h", away_participant_id: "a"}
-          - {month: "2027-01", event_id: "urn:bbc:sportsdata:football:event:s-f3", date_heading: "Saturday 2nd January", kickoff_time: "12:30", home_participant_id: "h", away_participant_id: "a"}
-          - {month: "2027-05", event_id: "urn:bbc:sportsdata:football:event:s-f4", date_heading: "Sunday 3rd May", kickoff_time: "13:00", home_participant_id: "h", away_participant_id: "a"}
+          - {month: "2026-11", event_id: "s-f2", date_heading: "Sunday 1st November", kickoff_time: "12:00", home_participant_id: "h", away_participant_id: "a"}
+          - {month: "2027-01", event_id: "s-f3", date_heading: "Saturday 2nd January", kickoff_time: "12:30", home_participant_id: "h", away_participant_id: "a"}
+          - {month: "2027-05", event_id: "s-f4", date_heading: "Sunday 3rd May", kickoff_time: "13:00", home_participant_id: "h", away_participant_id: "a"}
           # kickoff not yet confirmed
-          - {month: "2027-05", event_id: "urn:bbc:sportsdata:football:event:s-f5", date_heading: "Saturday 22nd May", kickoff_time: "TBC", home_participant_id: "h", away_participant_id: "a"}
+          - {month: "2027-05", event_id: "s-f5", date_heading: "Saturday 22nd May", kickoff_time: "TBC", home_participant_id: "h", away_participant_id: "a"}
     expect:
       rows:
-        - {match_id: "s-f1", match_date: "2026-10-18", is_kickoff_time_tbc: false, kicked_off_at: "2026-10-18 13:00:00+00:00"}
-        - {match_id: "s-f2", match_date: "2026-11-01", is_kickoff_time_tbc: false, kicked_off_at: "2026-11-01 12:00:00+00:00"}
-        - {match_id: "s-f3", match_date: "2027-01-02", is_kickoff_time_tbc: false, kicked_off_at: "2027-01-02 12:30:00+00:00"}
-        - {match_id: "s-f4", match_date: "2027-05-03", is_kickoff_time_tbc: false, kicked_off_at: "2027-05-03 12:00:00+00:00"}
-        - {match_id: "s-f5", match_date: "2027-05-22", is_kickoff_time_tbc: true, kicked_off_at: null}
+        - {bbc_match_id: "s-f1", opta_match_id: "f1", match_date: "2026-10-18", is_kickoff_time_tbc: false, kicked_off_at: "2026-10-18 13:00:00+00:00"}
+        - {bbc_match_id: "s-f2", opta_match_id: "f2", match_date: "2026-11-01", is_kickoff_time_tbc: false, kicked_off_at: "2026-11-01 12:00:00+00:00"}
+        - {bbc_match_id: "s-f3", opta_match_id: "f3", match_date: "2027-01-02", is_kickoff_time_tbc: false, kicked_off_at: "2027-01-02 12:30:00+00:00"}
+        - {bbc_match_id: "s-f4", opta_match_id: "f4", match_date: "2027-05-03", is_kickoff_time_tbc: false, kicked_off_at: "2027-05-03 12:00:00+00:00"}
+        - {bbc_match_id: "s-f5", opta_match_id: "f5", match_date: "2027-05-22", is_kickoff_time_tbc: true, kicked_off_at: null}

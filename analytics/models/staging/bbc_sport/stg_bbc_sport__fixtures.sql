@@ -7,9 +7,11 @@
 -- Times carry no zone; UK football kicks off in UK local time.
 WITH parsed AS (
     SELECT
-        {{ analytics.strip_urn('"event_id"', 'event') }} AS match_id,
-        "home_participant_id" AS home_opta_team_id,
-        "away_participant_id" AS away_opta_team_id,
+        -- Unlike other BBC tables, the fixtures page sends the match ID without
+        -- a URN prefix (`s-` + Opta ID), so there is nothing to strip.
+        "event_id" AS bbc_match_id,
+        "home_participant_id" AS opta_home_team_id,
+        "away_participant_id" AS opta_away_team_id,
         CAST(
             "month" || '-' || LPAD(
                 LEFT(
@@ -25,9 +27,10 @@ WITH parsed AS (
 )
 
 SELECT
-    match_id,
-    home_opta_team_id,
-    away_opta_team_id,
+    bbc_match_id,
+    {{ analytics.opta_id_from_bbc_id('bbc_match_id') }} AS opta_match_id,
+    opta_home_team_id,
+    opta_away_team_id,
     match_date,
     kickoff_time_local IS NULL AS is_kickoff_time_tbc,
     CASE

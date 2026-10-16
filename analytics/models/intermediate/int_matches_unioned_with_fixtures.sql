@@ -2,7 +2,7 @@
 -- the match itself: its season, whether it has been played, and the league
 -- points each side earned.
 --
--- A fixture and its result share a match_id, so a match moves from
+-- A fixture and its result share an opta_match_id, so a match moves from
 -- 'scheduled' to 'played' without changing identity. Where both exist the
 -- result wins. Fixtures name teams by Opta ID, as results do, so both kinds of
 -- row share a team key.
@@ -11,12 +11,12 @@
 -- call the same macro; none of them depend on this one for it.
 WITH played AS (
     SELECT
-        match_id,
+        opta_match_id,
         'played' AS match_status,
         {{ uk_local_date('kicked_off_at') }} AS match_date,
         kicked_off_at,
-        home_opta_team_id,
-        away_opta_team_id,
+        opta_home_team_id,
+        opta_away_team_id,
         home_score_fulltime,
         away_score_fulltime,
         winner_side,
@@ -27,19 +27,19 @@ WITH played AS (
 
 scheduled AS (
     SELECT
-        match_id,
+        opta_match_id,
         'scheduled' AS match_status,
         match_date,
         kicked_off_at,
-        home_opta_team_id,
-        away_opta_team_id,
+        opta_home_team_id,
+        opta_away_team_id,
         CAST(NULL AS integer) AS home_score_fulltime,
         CAST(NULL AS integer) AS away_score_fulltime,
         CAST(NULL AS varchar) AS winner_side,
         CAST(NULL AS varchar) AS tournament_name,
         CAST(NULL AS varchar) AS venue_name
     FROM {{ ref('stg_bbc_sport__fixtures') }}
-    WHERE match_id NOT IN (SELECT match_id FROM played)
+    WHERE opta_match_id NOT IN (SELECT opta_match_id FROM played)
 ),
 
 unioned AS (
@@ -49,9 +49,9 @@ unioned AS (
 )
 
 SELECT
-    match_id,
-    home_opta_team_id,
-    away_opta_team_id,
+    opta_match_id,
+    opta_home_team_id,
+    opta_away_team_id,
     match_status,
     {{ season_of('match_date') }} AS season,
     winner_side,

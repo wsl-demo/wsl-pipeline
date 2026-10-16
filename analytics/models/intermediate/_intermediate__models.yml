@@ -3,21 +3,21 @@ models:
     description: >
       One row per match, played or scheduled, with everything that follows from
       the match itself: season, status, and the league points each side earned.
-      A match keeps its match_id from fixture to result.
+      A match keeps its opta_match_id from fixture to result.
     data_tests:
       - expression_is_true:
           arguments:
             expression: "match_status <> 'played' or (home_points is not null and away_points is not null)"
     columns:
-      - name: match_id
-        description: ID of the match (BBC match URN without its prefix). Primary key.
+      - name: opta_match_id
+        description: Opta's match ID. Primary key.
         data_tests:
           - unique
           - not_null
-      - name: home_opta_team_id
+      - name: opta_home_team_id
         data_tests:
           - not_null
-      - name: away_opta_team_id
+      - name: opta_away_team_id
         data_tests:
           - not_null
       - name: match_status
@@ -59,10 +59,10 @@ models:
       most recent squad selection.
     data_tests:
       - unique:
-          column_name: "match_id || '|' || opta_player_id"
+          column_name: "opta_match_id || '|' || opta_player_id"
     columns:
-      - name: match_id
-        description: ID of the match (BBC match URN without its prefix). Foreign key.
+      - name: opta_match_id
+        description: Opta's match ID. Foreign key.
         data_tests:
           - not_null
       - name: opta_player_id
@@ -100,7 +100,7 @@ models:
           - not_null
       - name: recency_rank
         description: >
-          1 for the player's latest squad selection. Ties are broken on match_id
+          1 for the player's latest squad selection. Ties are broken on opta_match_id
           so the ordering is deterministic.
         data_tests:
           - not_null
@@ -144,10 +144,10 @@ models:
       appearance. Measures are nullable because the source is sparse.
     data_tests:
       - unique:
-          column_name: "match_id || '|' || opta_player_id"
+          column_name: "opta_match_id || '|' || opta_player_id"
     columns:
-      - name: match_id
-        description: ID of the match (BBC match URN without its prefix). Foreign key.
+      - name: opta_match_id
+        description: Opta's match ID. Foreign key.
         data_tests:
           - not_null
       - name: opta_player_id

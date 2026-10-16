@@ -4,7 +4,7 @@
 -- appearances with it rather than with rows.
 SELECT
     -- keys
-    a.match_id,
+    a.opta_match_id,
     a.opta_player_id,
     a.opta_team_id,
     -- strings
@@ -36,8 +36,8 @@ SELECT
     a.has_appeared
 FROM {{ ref('int_players_joined_to_matches') }} AS a
 INNER JOIN {{ ref('stg_bbc_sport__match_players') }} AS p
-    ON a.match_id = p.match_id
+    ON a.opta_match_id = p.opta_match_id
    AND a.opta_player_id = p.opta_player_id
 LEFT JOIN {{ ref('int_player_match_stats_pivoted') }} AS s
-    ON a.match_id = s.match_id
+    ON a.opta_match_id = s.opta_match_id
    AND a.opta_player_id = s.opta_player_id

@@ -1,31 +1,31 @@
 models:
   - name: matches
     description: >
-      One row per match, played or scheduled. A match keeps its match_id from
+      One row per match, played or scheduled. A match keeps its opta_match_id from
       fixture to result, so status changes while identity does not. Result
       columns are null until the match is played.
     config:
       contract:
         enforced: true
     columns:
-      - name: match_id
+      - name: opta_match_id
         data_type: varchar
-        description: "ID of the match: BBC's match URN without its prefix. Primary key."
+        description: Opta's match ID. Primary key.
         data_tests:
           - unique
           - not_null
-      - name: home_opta_team_id
+      - name: opta_home_team_id
         data_type: varchar
-        description: Home team. Foreign key to teams.
+        description: Opta's ID of the home team. Foreign key to teams.
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('teams')
                 field: opta_team_id
-      - name: away_opta_team_id
+      - name: opta_away_team_id
         data_type: varchar
-        description: Away team. Foreign key to teams.
+        description: Opta's ID of the away team. Foreign key to teams.
         data_tests:
           - not_null
           - relationships:

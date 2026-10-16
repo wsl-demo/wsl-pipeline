@@ -5,7 +5,7 @@
 -- The two percentage statistics (accuratePassPercentage, wonTacklePercentage)
 -- are legitimately fractional and are not listed.
 SELECT
-    match_id,
+    opta_match_id,
     opta_player_id,
     stat_name,
     stat_value

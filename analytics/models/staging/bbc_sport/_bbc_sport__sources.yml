@@ -10,9 +10,6 @@ sources:
         description: One row per match
         config:
           loaded_at_field: "cast(source_fetched_at as timestamptz)"
-          freshness:
-            warn_after: {count: 7, period: day}
-            error_after: {count: 14, period: day}
         columns:
           - name: source_match_id
             description: BBC's short match ID. Primary key.
@@ -39,31 +36,90 @@ sources:
                   arguments:
                     values: ['home', 'away', 'draw']
       - name: match_actions
-        description: One row per action in a match, which maps back to matches table.
+        description: |
+          The goals and sendings-off in a match, as listed under each team on
+          BBC's match page. One row per action.
+
+          **Grain:** `match_urn`, `source_side`, `action_index`, `sub_index`.
+          BBC lists the players who acted for each side; `action_index` numbers
+          those players and `sub_index` numbers each player's actions, so a
+          player who scores twice is one `action_index` with `sub_index` 0 and 1.
+
+          **Joins:** to `matches` on `match_urn` (= `urn`) or `source_match_id`.
+
+          **Own goals** are listed under the team they count for, so their
+          `team_urn` is not the scorer's team. Summing goals by side reproduces
+          the full-time score of every match. Single yellow cards are not in
+          this table.
+        data_tests:
+          - unique:
+              column_name: "match_urn || '|' || source_side || '|' || action_index || '|' || sub_index"
+              description: One row per action, as described in the table's grain.
         columns:
           - name: source_match_id
-            description: Foreign key reference to match ID.
+            data_type: varchar
+            description: "BBC's match page slug (e.g. `c040m05309zt`). Foreign key to `matches`."
             data_tests:
               - relationships:
                   arguments:
                     to: source('bbc_sport', 'matches')
                     field: source_match_id
+          - name: match_urn
+            data_type: varchar
+            description: "BBC's match URN: `urn:bbc:sportsdata:football:event:` + `s-` + Opta's match ID. Foreign key to `matches.urn`."
+          - name: source_side
+            data_type: varchar
+            description: "`home` or `away`: the side the action is listed under on BBC's page."
           - name: team_urn
-            description: URN of the acting player's team.
+            data_type: varchar
+            description: >
+              BBC's team URN (`urn:bbc:sportsdata:football:team:` + slug) for
+              the side the action is listed under. For an own goal this is the
+              team the goal counts for, not the scorer's.
             data_tests:
               - not_null
+          - name: action_index
+            data_type: varchar
+            description: Position of the acting player in their side's list, from 0. Sent as text.
+          - name: sub_index
+            data_type: varchar
+            description: Position of the action among that player's actions, from 0. Sent as text.
+          - name: playerUrn
+            data_type: varchar
+            description: "BBC's player URN: `urn:bbc:sportsdata:football:player:` + `s-` + Opta's player ID."
+          - name: playerName
+            data_type: varchar
+            description: The player's name as BBC abbreviates it, e.g. "K. Shaw".
           - name: actionType
-            description: The unconditioned type of action.
+            data_type: varchar
+            description: "Broad kind of action: `goal` or `card`."
             data_tests:
               - accepted_values:
                   arguments:
                     values: ['goal', 'card']
           - name: type
-            description: The conditioned type of action.
+            data_type: varchar
+            description: >
+              Specific kind of action. Goals are `Goal`, `Own Goal` or `Penalty`;
+              cards are `Red Card` or `Two Yellow Cards`.
             data_tests:
               - accepted_values:
                   arguments:
                     values: ['Goal', 'Own Goal', "Red Card", "Two Yellow Cards", "Penalty", "Yellow Card"]
+          - name: typeLabel_value
+            data_type: varchar
+            description: Display label for `type`. Identical to `type` in all data observed.
+          - name: typeLabel_accessible
+            data_type: varchar
+            description: Screen-reader label for `type`. Identical to `type` in all data observed.
+          - name: timeLabel_value
+            data_type: varchar
+            description: >
+              Match minute as displayed, with any added time after a `+`: `13'`,
+              `90'+4`. Staging parses it into regulation and added minutes.
+          - name: timeLabel_accessible
+            data_type: varchar
+            description: Screen-reader form of `timeLabel_value`, e.g. "90 minutes plus 4".
       - name: match_officials
         description: One row per official in a match.
         columns:
@@ -201,10 +257,10 @@ sources:
               - unique
               - not_null
           - name: home_participant_id
-            description: BBC's opaque team ID; other tables call this `id` or `home_id`.
+            description: Opta's ID of the home team, which BBC calls its participant ID; other tables call this `id` or `home_id`.
             data_tests:
               - not_null
           - name: away_participant_id
-            description: BBC's opaque team ID; other tables call this `id` or `away_id`.
+            description: Opta's ID of the away team, which BBC calls its participant ID; other tables call this `id` or `away_id`.
             data_tests:
               - not_null

@@ -10,11 +10,11 @@ WITH ranked AS (
         t.team_short_name,
         ROW_NUMBER() OVER (
             PARTITION BY t.opta_team_id
-            ORDER BY m.kicked_off_at DESC, t.match_id DESC
+            ORDER BY m.kicked_off_at DESC, t.opta_match_id DESC
         ) AS recency_rank
     FROM {{ ref('stg_bbc_sport__match_teams') }} AS t
     INNER JOIN {{ ref('stg_bbc_sport__matches') }} AS m
-        ON t.match_id = m.match_id
+        ON t.opta_match_id = m.opta_match_id
 )
 
 SELECT

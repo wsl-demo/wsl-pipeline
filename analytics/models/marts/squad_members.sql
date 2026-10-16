@@ -14,7 +14,7 @@ WITH selections AS (
         season,
         opta_team_id,
         opta_player_id,
-        match_id,
+        opta_match_id,
         kicked_off_at,
         is_starter,
         has_appeared,
@@ -24,7 +24,7 @@ WITH selections AS (
         display_name,
         ROW_NUMBER() OVER (
             PARTITION BY season, opta_team_id, opta_player_id
-            ORDER BY kicked_off_at DESC, match_id DESC
+            ORDER BY kicked_off_at DESC, opta_match_id DESC
         ) AS recency_rank
     FROM {{ ref('int_players_joined_to_matches') }}
 ),

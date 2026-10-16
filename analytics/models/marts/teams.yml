@@ -11,8 +11,8 @@ models:
       - name: opta_team_id
         data_type: varchar
         description: >
-          Opta's team ID, which BBC calls the participant ID. The key teams
-          carry throughout the marts. Primary key.
+          Opta's team ID, which BBC calls the participant ID. The key
+          teams carry throughout the marts. Primary key.
         data_tests:
           - not_null
           - unique

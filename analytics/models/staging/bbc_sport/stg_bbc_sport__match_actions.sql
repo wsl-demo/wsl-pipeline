@@ -1,9 +1,8 @@
 WITH parsed AS (
     SELECT
-        {{ analytics.strip_urn('"match_urn"', 'event') }} AS match_id,
-        {{ analytics.strip_urn('"team_urn"', 'team') }} AS team_id,
-        {{ analytics.strip_urn('"playerUrn"', 'player') }} AS player_id,
-        {{ analytics.opta_id_from_bbc_id(analytics.strip_urn('"playerUrn"', 'player')) }} AS opta_player_id,
+        {{ analytics.strip_urn('"match_urn"', 'event') }} AS bbc_match_id,
+        {{ analytics.strip_urn('"team_urn"', 'team') }} AS bbc_team_id,
+        {{ analytics.strip_urn('"playerUrn"', 'player') }} AS bbc_player_id,
         CAST("action_index" AS integer) AS action_index,
         CAST("sub_index" AS integer) AS sub_index,
         CASE WHEN "type" = 'Own Goal' THEN true ELSE false END AS is_own_goal,
@@ -16,10 +15,11 @@ WITH parsed AS (
     FROM {{ source('bbc_sport', 'match_actions') }}
 )
 SELECT
-    match_id,
-    team_id,
-    player_id,
-    opta_player_id,
+    bbc_match_id,
+    {{ analytics.opta_id_from_bbc_id('bbc_match_id') }} AS opta_match_id,
+    bbc_team_id,
+    bbc_player_id,
+    {{ analytics.opta_id_from_bbc_id('bbc_player_id') }} AS opta_player_id,
     action_index,
     sub_index,
     is_own_goal,

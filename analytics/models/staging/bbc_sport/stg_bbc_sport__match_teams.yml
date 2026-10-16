@@ -4,25 +4,34 @@ models:
     data_tests:
       # A team appears once per side of a fixture
       - unique:
-          column_name: "match_id || '|' || source_side"
+          column_name: "bbc_match_id || '|' || source_side"
     columns:
-      - name: match_id
-        description: ID of the match (BBC match URN without its prefix). Foreign key.
+      - name: bbc_match_id
+        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
         data_tests:
           - not_null
+      - name: opta_match_id
+        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__matches')
+                field: opta_match_id
       - name: source_side
         data_tests:
           - accepted_values:
               arguments:
                 values: ['homeTeam', 'awayTeam']
-      - name: team_id
-        description: ID of the team (BBC team URN without its prefix). Foreign key.
+      - name: bbc_team_id
+        description: "BBC's team ID: the team URN without its prefix, a slug such as `arsenal-ladies`. Not an Opta ID."
         data_tests:
           - not_null
       - name: opta_team_id
         description: >
           Opta's team ID, which BBC calls its participant ID. Stable per team
-          across matches, and the key teams carry in the marts.
+          across matches, and the key teams carry in the marts. Matches the
+          contestantId in Opta's standings feed for all 14 WSL clubs.
         data_tests:
           - not_null
       - name: team_name
@@ -35,4 +44,6 @@ models:
       - name: alignment
       - name: formation
         description: Formation as written by the source, e.g. "4-2-3-1".
+      - name: bbc_manager_id
+        description: BBC's ID of the team's manager. Stable per manager; unconfirmed as an Opta ID.
       - name: manager_name

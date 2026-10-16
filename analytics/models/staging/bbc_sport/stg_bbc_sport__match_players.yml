@@ -8,27 +8,37 @@ models:
             expression: "NOT is_starter OR substituted_on_period IS NULL"
       # A player can only be on the match roster 1 time
       - unique:
-          column_name: "match_id || '|' || player_id"
+          column_name: "bbc_match_id || '|' || bbc_player_id"
     columns:
-      - name: match_id
-        description: ID of the match (BBC match URN without its prefix). Foreign key.
+      - name: bbc_match_id
+        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
         data_tests:
           - not_null
-      - name: team_id
+      - name: opta_match_id
+        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__matches')
+                field: opta_match_id
+      - name: bbc_team_id
+        description: "BBC's team ID: the team URN without its prefix, a slug such as `arsenal-ladies`. Not an Opta ID."
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_teams')
-                field: team_id
-      - name: player_id
+                field: bbc_team_id
+      - name: bbc_player_id
+        description: "BBC's player ID: the player URN without its prefix, `s-` followed by Opta's player ID."
         data_tests:
           - not_null
       - name: opta_player_id
         description: >
-          Opta's player ID: player_id without its `s-` prefix. The key shared
-          with wsl_football's squad data. Null if player_id is not `s-` prefixed,
-          which the test below turns into a failure.
+          Opta's player ID: bbc_player_id without its `s-` prefix. The key shared
+          with wsl_football's squad data. Null if bbc_player_id is not `s-`
+          prefixed, which the not_null test turns into a failure.
         data_tests:
           - not_null
       - name: display_name
@@ -62,12 +72,20 @@ models:
       #
       # (starter) substituted off
       - name: substituted_off_reason
-      - name: substituted_off_for_player_id
+      - name: bbc_substituted_off_for_player_id
+        description: "BBC's player ID of the player who came on for this one."
         data_tests:
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_players')
-                field: player_id
+                field: bbc_player_id
+      - name: opta_substituted_off_for_player_id
+        description: "Opta's player ID of the player who came on for this one."
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_players')
+                field: opta_player_id
       - name: substituted_off_period
       - name: substituted_off_minute
       - name: substituted_off_regulation_time
@@ -81,12 +99,20 @@ models:
       #
       # (sub) substituted on
       - name: substituted_on_reason
-      - name: substituted_on_for_player_id
+      - name: bbc_substituted_on_for_player_id
+        description: "BBC's player ID of the player this one replaced."
         data_tests:
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_players')
-                field: player_id
+                field: bbc_player_id
+      - name: opta_substituted_on_for_player_id
+        description: "Opta's player ID of the player this one replaced."
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__match_players')
+                field: opta_player_id
       - name: substituted_on_period
       - name: substituted_on_minute
       - name: substituted_on_regulation_time

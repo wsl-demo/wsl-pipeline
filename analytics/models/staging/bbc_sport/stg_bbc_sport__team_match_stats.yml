@@ -6,20 +6,28 @@ models:
       downstream model needs a specific subset.
     data_tests:
       - unique:
-          column_name: "match_id || '|' || team_id || '|' || stat_name"
+          column_name: "bbc_match_id || '|' || bbc_team_id || '|' || stat_name"
     columns:
-      - name: match_id
-        description: ID of the match (BBC match URN without its prefix). Foreign key.
+      - name: bbc_match_id
+        description: "BBC's match ID: the match URN without its prefix, `s-` followed by Opta's match ID."
         data_tests:
           - not_null
-      - name: team_id
-        description: ID of the team (BBC team URN without its prefix). Foreign key.
+      - name: opta_match_id
+        description: "Opta's match ID: bbc_match_id without its `s-` prefix. Null if bbc_match_id is not `s-` prefixed. Foreign key."
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_bbc_sport__matches')
+                field: opta_match_id
+      - name: bbc_team_id
+        description: "BBC's team ID: the team URN without its prefix, a slug such as `arsenal-ladies`. Not an Opta ID."
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_teams')
-                field: team_id
+                field: bbc_team_id
       - name: alignment
       - name: stat_name
         description: Dotted path the source uses to name the statistic.

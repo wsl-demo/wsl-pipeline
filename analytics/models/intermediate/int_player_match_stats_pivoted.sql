@@ -14,7 +14,7 @@
 -- failing, so `player_count_stats_are_whole_numbers` guards the cast: a
 -- fractional count fails there instead of being quietly altered here.
 SELECT
-    match_id,
+    opta_match_id,
     opta_player_id,
     CAST(MAX(CASE WHEN stat_name = 'minsPlayed' THEN stat_value END) AS integer) AS minutes_played,
     CAST(MAX(CASE WHEN stat_name = 'goals' THEN stat_value END) AS integer) AS goals,
@@ -30,4 +30,4 @@ SELECT
     CAST(MAX(CASE WHEN stat_name = 'fouls' THEN stat_value END) AS integer) AS fouls_committed,
     CAST(MAX(CASE WHEN stat_name = 'wasFouled' THEN stat_value END) AS integer) AS fouls_won
 FROM {{ ref('stg_bbc_sport__player_match_stats') }}
-GROUP BY match_id, opta_player_id
+GROUP BY opta_match_id, opta_player_id

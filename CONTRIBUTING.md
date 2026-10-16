@@ -38,59 +38,92 @@ them into staging, intermediate and mart models. Run `just` to list commands.
 6. **Debug failures:** `just failures` prints the rows behind failed tests
    from the latest run. Tests that errored (rather than failed) show in the dbt output.
 
-## ID convention: URN prefixes
+## ID convention: `bbc_*_id` and `opta_*_id`
 
-BBC identifies players, teams and so on with URNs such as
-`urn:bbc:sportsdata:football:player:s-a1b2c3d4e5f6a7b8c9d0e1f2g`. The prefix is
-constant per entity type, so it only hurts readability.
+Every staged identifier says whose it is:
 
-- **Raw keeps full URNs**, exactly as received.
-- **Staging strips the prefix** with the `strip_urn` macro, and names the column
-  `*_id` (`player_id`, `team_id`, `venue_id`) because it is no longer a URN.
-- **Everything downstream uses the short ids**, so never join a staged id to a raw URN.
+- **`opta_*_id`**: confirmed to be Opta's ID. These are the keys downstream.
+- **`bbc_*_id`**: BBC's own ID, or an ID BBC sends that is not confirmed as
+  Opta's (venue, official, manager). These stay in staging.
+
+| Entity | `bbc_*_id` (staging only) | `opta_*_id` (downstream key) |
+| --- | --- | --- |
+| Match | `bbc_match_id`: `s-` + Opta ID | `opta_match_id` |
+| Player | `bbc_player_id`: `s-` + Opta ID | `opta_player_id` |
+| Team | `bbc_team_id`: slug such as `arsenal-ladies` | `opta_team_id`: what BBC calls the participant ID |
+| Tournament | `bbc_tournament_id`: slug `womens-super-league` | `opta_tournament_id` |
+| Stage | — | `opta_stage_id`: one "Regular Season" per season |
+| Venue | `bbc_venue_id`: `s-` + an unconfirmed ID | — |
+| Official | `bbc_official_id`, `bbc_official_op_id` | — |
+| Manager | `bbc_manager_id` | — |
+
+Home and away versions put the owner first: `bbc_home_team_id`,
+`opta_home_team_id`.
+
+**How the Opta IDs were confirmed** (October 2026): match IDs against 21
+matches in an Opta fixtures feed, team IDs against all 14 clubs in an Opta
+standings feed (and wsl_football's `team_optaId`), tournament and stage IDs
+against the same feeds, and player IDs through the join to wsl_football. Venue,
+official and manager IDs look like Opta's but have not been checked, so they
+keep BBC names until they are.
+
+### Getting from raw to staging
+
+BBC often sends an ID as a URN such as
+`urn:bbc:sportsdata:football:player:s-a1b2c3d4e5f6a7b8c9d0e1f2g`.
+
+- **Raw keeps values exactly as received.**
+- **Strip a URN only when it is the sole BBC ID for that entity.** The
+  `strip_urn` macro drops the constant prefix. A field that already holds the
+  short form, like fixtures' `event_id`, is staged as sent. Where BBC sends
+  Opta's ID as a bare column (`home_id`, `tournament_id`, `stage_id`), that
+  column becomes the `opta_*_id` as is.
+- **Derive an Opta ID from an `s-` BBC ID** with `opta_id_from_bbc_id`, which
+  drops the `s-` and returns null for anything else.
+
+Each staging model reads the source in a `parsed` CTE, which builds every
+`bbc_*_id` and renames any column BBC already sends as an Opta ID. The final
+`SELECT` derives the remaining Opta IDs from their BBC IDs, so the two ways an
+Opta ID arrives stay visible:
 
 ```sql
-{{ analytics.strip_urn('"playerUrn"', 'player') }} AS player_id
+WITH parsed AS (
+    SELECT
+        {{ analytics.strip_urn('"urn"', 'player') }} AS bbc_player_id,
+        "home_id" AS opta_home_team_id,  -- sent by BBC as its own column
+        ...
+)
+SELECT
+    bbc_player_id,
+    {{ analytics.opta_id_from_bbc_id('bbc_player_id') }} AS opta_player_id,  -- derived
+    opta_home_team_id,
+    ...
+FROM parsed
 ```
 
 The `kind` is `player`, `team`, `event` (a match), `tournament`, `venue` or
 `official`.
 
-**A match is identified by its URN, not by BBC's page slug.** `match_id` is the
-match URN without its prefix (`s-a1b2c3d4e5f6a7b8c9d0e1f2g`). The page slug in
-raw `source_match_id` exists only once a match has been played, so it can't key
-a table that also holds scheduled fixtures; staging builds `match_id` from
-`urn` / `match_urn` instead, and a fixture keeps the same ID when it becomes a
-result.
+Two tests guard the derivation. `staged_ids_have_no_urn_prefix` fails if a URN
+with an unknown prefix slips through `strip_urn`, and `bbc_ids_are_s_prefixed`
+fails if an ID that an Opta ID is derived from lacks its `s-`. When you stage a
+new column of either kind, add it to the matching test.
 
-Teams have a second ID: BBC calls Opta's team ID the "participant ID", and
-fixtures name teams by it rather than by URN. Staging exposes it as
-`opta_team_id` (on matches, match teams and fixtures).
-
-The macro only shortens values that start with the exact prefix and passes
-anything else through untouched. `tests/staged_ids_have_no_urn_prefix.sql` then
-fails on it, so mixed formats can't reach the marts. When you stage a new
-URN column, add it to that test.
+BBC's match page slug (`source_match_id`) is staged unchanged on
+`stg_bbc_sport__matches` as `bbc_match_page_id`, for tracing a row to its
+page. It exists only once a match is played, so it can't key a table that also
+holds fixtures, and nothing downstream uses it.
 
 ## Joining the two sources: Opta IDs
 
 BBC Sport and wsl_football (the league's site) share Opta's IDs, which is how
 they are joined, with no mapping table. Opta's IDs are also the keys in the
-marts and the intermediate layer; BBC's own IDs stay in staging, as the source's
-identity.
+marts and the intermediate layer.
 
-| Entity | In staging (BBC) | Everywhere downstream |
-| --- | --- | --- |
-| Player | `player_id` (`s-` + Opta ID), plus `opta_player_id` | `opta_player_id` |
-| Team | `team_id` (URN slug such as `arsenal-ladies`); `opta_team_id` on `matches`, `match_teams` and fixtures | `opta_team_id` |
-
-- **Players:** staging derives `opta_player_id` by dropping BBC's `s-`
-  (the `opta_id_from_bbc_id` macro). `player_ids_are_s_prefixed` fails if any
-  player ID ever lacks the prefix.
-- **Teams:** BBC calls the Opta team ID its "participant ID". Only matches,
-  match teams and fixtures carry it; the lineup, action and statistics tables
-  have just the URN slug, so `int_players_joined_to_matches` looks the Opta ID up
-  from the match's team list.
+Most BBC tables carry only BBC's team slug, not the Opta team ID. Only
+matches, match teams and fixtures have `opta_team_id`, so
+`int_players_joined_to_matches` looks it up from the match's team list on
+`bbc_team_id`.
 
 wsl_football is used for **biographical data only** (nationality, date of birth,
 height, weight, and the names of players BBC hasn't listed yet). Which team a

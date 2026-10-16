@@ -2,25 +2,33 @@ models:
   - name: stg_bbc_sport__fixtures
     description: >
       One row per scheduled match. A match leaves the fixtures page once played,
-      and then appears in stg_bbc_sport__matches under the same match_id.
+      and then appears in stg_bbc_sport__matches under the same match IDs.
     columns:
-      - name: match_id
+      - name: bbc_match_id
         description: >
-          ID of the match: BBC's match URN without its prefix. The same ID the
-          match carries in stg_bbc_sport__matches once played. Primary key.
+          BBC's match ID: `s-` followed by Opta's match ID. The source sends it
+          without the URN prefix that other BBC tables carry. The same ID the
+          match carries in stg_bbc_sport__matches once played.
         data_tests:
           - unique
           - not_null
-      - name: home_opta_team_id
-        description: BBC's opaque ID of the home team.
+      - name: opta_match_id
+        description: >
+          Opta's match ID: bbc_match_id without its `s-` prefix. Null if
+          bbc_match_id is not `s-` prefixed. Primary key.
+        data_tests:
+          - unique
+          - not_null
+      - name: opta_home_team_id
+        description: Opta's ID of the home team, which BBC calls its participant ID.
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('stg_bbc_sport__match_teams')
                 field: opta_team_id
-      - name: away_opta_team_id
-        description: BBC's opaque ID of the away team.
+      - name: opta_away_team_id
+        description: Opta's ID of the away team, which BBC calls its participant ID.
         data_tests:
           - not_null
           - relationships:

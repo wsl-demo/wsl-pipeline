@@ -1,6 +1,8 @@
 {#
     Drop BBC's constant `urn:bbc:sportsdata:football:<kind>:` prefix from a
-    player or team URN, leaving the short id (`s-8euuw3bc...`, `everton-ladies`).
+    URN, leaving BBC's short id (`s-8euuw3bc...`, `everton-ladies`). Used only
+    where the URN is the sole BBC ID for an entity; a field that already holds
+    the short form (fixtures' `event_id`) is staged as sent.
 
     - Only a value that *starts with* the exact prefix is shortened. Anything
       else is passed through unchanged so it stays visible, and the
