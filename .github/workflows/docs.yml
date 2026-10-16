@@ -50,19 +50,6 @@ jobs:
           mkdir _site
           cp -R analytics/target/index.html analytics/target/assets analytics/target/info_schema _site/
 
-      # The docs app hard-codes the lineage panel to open on its DAG view, with
-      # no setting or URL parameter to change it, so open it on Groups by
-      # editing that one default in the app's bundle. The bundle's file name is
-      # read from index.html: `assets/` holds other `index-*.js` chunks, such as
-      # the syntax highlighter. If a dbt upgrade changes the bundle so the
-      # default isn't found exactly once, fail rather than publish unpatched.
-      - name: Default the lineage panel to Groups
-        run: |
-          js="_site/$(grep -o 'assets/index-[^"]*\.js' _site/index.html)"
-          test "$(grep -o 'useState("dag")' "$js" | wc -l)" -eq 1 \
-            || { echo "::error::lineage view default not found in $js"; exit 1; }
-          sed -i 's/useState("dag")/useState("groups")/' "$js"
-
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
