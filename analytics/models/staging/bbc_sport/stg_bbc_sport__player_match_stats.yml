@@ -3,7 +3,7 @@ models:
     description: |
       Each player's statistics for each match, in the source's long shape:
       one row per statistic (raw `bbc_sport.player_match_stats`).
-      `int_player_match_stats__pivoted` reshapes it to one row per appearance.
+      `int_player_match_stats_pivoted` reshapes it to one row per appearance.
 
       **Grain:** one row per player per match per statistic (`bbc_match_id`,
       `bbc_player_id`, `stat_name`, tested unique).
@@ -28,7 +28,7 @@ models:
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
         data_tests:
           - not_null
           - relationships:
@@ -48,7 +48,7 @@ models:
         data_tests:
           - not_null
       - name: opta_player_id
-        description: "{{ doc('opta_player_id') }}"
+        description: "{{ doc('opta_player_id') }} {{ doc('opta_id_from_bbc_id') }}"
         data_tests:
           - not_null
           - relationships:
@@ -61,7 +61,7 @@ models:
         description: Machine name of the statistic, e.g. "minsPlayed". From raw `dataField`, as sent.
         data_tests:
           - not_null
-          # Guards the pivot in int_player_match_stats__pivoted: a new or
+          # Guards the pivot in int_player_match_stats_pivoted: a new or
           # renamed statistic fails here rather than silently going missing.
           - accepted_values:
               arguments:

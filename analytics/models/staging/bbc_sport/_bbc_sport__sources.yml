@@ -173,7 +173,11 @@ sources:
                     values: ['goal', 'card']
           - name: type
             data_type: varchar
-            description: "Specific kind of action: `Goal`, `Own Goal`, `Penalty`, `Red Card` or `Two Yellow Cards`."
+            description: >
+              Specific kind of action: `Goal`, `Own Goal`, `Penalty`, `Red Card`
+              or `Two Yellow Cards`. The test also accepts `Yellow Card`, which
+              has not appeared: single yellows are listed only in
+              `match_player_cards`.
             data_tests:
               - accepted_values:
                   arguments:

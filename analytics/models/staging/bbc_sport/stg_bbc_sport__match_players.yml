@@ -47,7 +47,7 @@ models:
         data_tests:
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} Foreign key to `stg_bbc_sport__matches`."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Foreign key to `stg_bbc_sport__matches`."
         data_tests:
           - not_null
           - relationships:
@@ -67,7 +67,7 @@ models:
         data_tests:
           - not_null
       - name: opta_player_id
-        description: "{{ doc('opta_player_id') }} The not_null test turns a BBC ID without its `s-` into a failure."
+        description: "{{ doc('opta_player_id') }} {{ doc('opta_id_from_bbc_id') }} The not_null test turns a BBC ID without its `s-` into a failure."
         data_tests:
           - not_null
       - name: display_name

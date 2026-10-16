@@ -10,10 +10,63 @@ models:
     data_tests:
       - unique:
           column_name: "opta_match_id || '|' || opta_player_id"
+    # Semantic layer: sum these metrics over `season` for a player's season
+    # totals. The season in progress needs no special case, because it is just
+    # the season whose matches are not all played yet.
+    semantic_model:
+      enabled: true
+    agg_time_dimension: match_date
+    derived_semantics:
+      entities:
+        - name: match_player
+          type: primary
+          expr: "opta_match_id || '|' || opta_player_id"
+    metrics:
+      - name: squad_selections
+        description: Matchday squads the player was named in, bench included.
+        type: simple
+        agg: count
+        expr: 1
+      - name: appearances
+        description: Matches the player started or came on in.
+        type: simple
+        agg: sum_boolean
+        expr: has_appeared
+      - name: starts
+        description: Matches the player started. Substitute appearances are not counted.
+        type: simple
+        agg: sum_boolean
+        expr: is_starter
+      - name: minutes_played
+        description: Excludes matches where the source recorded no minutes, including unused substitutes.
+        type: simple
+        agg: sum
+        expr: minutes_played
+      - name: goals
+        description: Null, not zero, for a goalkeeper, whose goals the source does not record.
+        type: simple
+        agg: sum
+        expr: goals
+      - name: assists
+        description: Assists the player made, as the source records them.
+        type: simple
+        agg: sum
+        expr: assists
+      - name: shots_total
+        description: Shots the player took, on and off target.
+        type: simple
+        agg: sum
+        expr: shots_total
+      - name: shots_on_target
+        description: Shots the player took that were on target. A subset of shots_total.
+        type: simple
+        agg: sum
+        expr: shots_on_target
     columns:
       - name: opta_match_id
         data_type: varchar
-        description: Opta's match ID. Foreign key to matches.
+        description: "{{ doc('opta_match_id') }} Foreign key to matches."
+        entity: foreign
         data_tests:
           - not_null
           - relationships:
@@ -22,7 +75,8 @@ models:
                 field: opta_match_id
       - name: opta_player_id
         data_type: varchar
-        description: Opta's player ID. Foreign key to players.
+        description: "{{ doc('opta_player_id') }} Foreign key to players."
+        entity: foreign
         data_tests:
           - not_null
           - relationships:
@@ -31,27 +85,40 @@ models:
                 field: opta_player_id
       - name: opta_team_id
         data_type: varchar
-        description: Opta's ID of the team the player was named for. Foreign key to teams.
+        description: "{{ doc('opta_team_id') }} The team the player was named for. Foreign key to teams."
+        entity: foreign
         data_tests:
           - not_null
           - relationships:
               arguments:
                 to: ref('teams')
                 field: opta_team_id
+      - name: match_date
+        data_type: date
+        description: Calendar date of the match in UK local time.
+        granularity: day
+        dimension: time
+        data_tests:
+          - not_null
       - name: season
         data_type: varchar
-        description: Season of the match.
+        description: "{{ doc('season') }}"
+        dimension: categorical
         data_tests:
           - not_null
       - name: position
         data_type: varchar
         description: Playing position. Null for appearances made as a substitute.
+        dimension: categorical
       - name: substituted_on_reason
         data_type: varchar
+        description: "`Tactical` or `Injury`: why the player this one replaced was taken off. Null if the player didn't come on."
       - name: substituted_off_reason
         data_type: varchar
+        description: "`Tactical` or `Injury`. Null if the player wasn't taken off."
       - name: shirt_number
         data_type: integer
+        description: Shirt number worn in this match.
       - name: substituted_on_minute
         data_type: integer
         description: Minute the player came on. Null for starters and unused subs.
@@ -62,39 +129,82 @@ models:
           match and for those who never came on.
       - name: minutes_played
         data_type: integer
-        description: From the source's minsPlayed statistic. Null where the source did not record it, including unused substitutes.
+        description: "{{ doc('minutes_played') }}"
       - name: goals
         data_type: integer
-        description: Null for goalkeepers, whose goals the source does not record. Null means not recorded, not zero.
+        description: "{{ doc('goals') }}"
       - name: assists
         data_type: integer
+        description: "{{ doc('assists') }}"
       - name: chances_created
         data_type: integer
+        description: "{{ doc('chances_created') }}"
       - name: shots_total
         data_type: integer
+        description: "{{ doc('shots_total') }}"
       - name: shots_on_target
         data_type: integer
+        description: "{{ doc('shots_on_target') }}"
       - name: saves
         data_type: integer
-        description: Recorded for goalkeepers only.
+        description: "{{ doc('saves') }}"
       - name: total_passes
         data_type: integer
+        description: "{{ doc('total_passes') }}"
       - name: pass_accuracy_percent
         data_type: double
+        description: "{{ doc('pass_accuracy_percent') }}"
       - name: total_tackles
         data_type: integer
+        description: "{{ doc('total_tackles') }}"
       - name: tackles_won_percent
         data_type: double
+        description: "{{ doc('tackles_won_percent') }}"
       - name: fouls_committed
         data_type: integer
+        description: "{{ doc('fouls_committed') }}"
       - name: fouls_won
         data_type: integer
+        description: "{{ doc('fouls_won') }}"
       - name: is_starter
         data_type: boolean
+        description: True for the starting eleven; false for the bench.
+        dimension: categorical
       - name: is_captain
         data_type: boolean
+        description: True for the team's captain in this match.
+        dimension: categorical
       - name: has_appeared
         data_type: boolean
         description: True for starters and substitutes who came on; false for unused bench.
         data_tests:
           - not_null
+
+# Metrics built from other metrics go at the top level: under the model, dbt
+# 2.0.6 parses every metric as a simple one.
+metrics:
+  - name: goals_per_90
+    label: Goals per 90 minutes
+    description: >
+      Goals scaled to a full match. Fairer than raw goals for players who often
+      come off the bench.
+    type: derived
+    expr: goals * 90.0 / minutes_played
+    input_metrics:
+      - name: goals
+      - name: minutes_played
+  - name: goal_contributions
+    label: Goals and assists
+    description: >
+      Goals plus assists. Null for a goalkeeper, because their goals are null
+      and adding null gives null.
+    type: derived
+    expr: goals + assists
+    input_metrics:
+      - name: goals
+      - name: assists
+  - name: shot_accuracy
+    description: Share of shots that were on target.
+    type: ratio
+    numerator: shots_on_target
+    denominator: shots_total

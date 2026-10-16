@@ -1,15 +1,16 @@
-Welcome to your new dbt project!
+# analytics
 
-### Using the starter project
+The dbt project that turns the raw WSL data into the marts the app serves.
 
-Try running the following commands:
-- dbt run
-- dbt test
+- **What the data means and how each layer transforms it:** the
+  [dbt docs](https://wsl-demo.github.io/wsl-pipeline/). Its home page is
+  `models/_overview.md`.
+- **How the pipeline runs end to end:** the [repo README](../README.md).
 
+Run dbt through the repo's Justfile, from anywhere in the repo, so it uses the
+project's virtualenv and the warehouse path in `.env`:
 
-### Resources:
-- Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)
-- Check out [Discourse](https://discourse.getdbt.com/) for commonly asked questions and answers
-- Join the [chat](https://community.getdbt.com/) on Slack for live discussions and support
-- Find [dbt events](https://events.getdbt.com) near you
-- Check out [the blog](https://blog.getdbt.com/) for the latest news on dbt's development and best practices
+```sh
+just docs          # build and serve these docs locally
+just dbt build     # or any other dbt command
+```

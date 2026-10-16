@@ -1,0 +1,26 @@
+exposures:
+  - name: wsl_app
+    label: WSL app
+    type: application
+    maturity: medium
+    owner:
+      name: kat-kel
+    description: |
+      The full-stack app that serves this pipeline's data to users, from its own
+      Postgres database.
+
+      Dagster's `publish_marts` asset (orchestration/publish.py) copies these
+      marts there after a build in which every dbt test passed. It loads each
+      table into the `analytics_next` schema and then swaps all of them into
+      `analytics` in one batch, so the app's API never sees a mix of old and new
+      tables. Raw, staging and intermediate data never leave DuckDB.
+
+      Changing a mart's columns changes what the app receives; each mart's
+      enforced contract makes that change deliberate.
+    depends_on:
+      - ref('matches')
+      - ref('matchday_squad_members')
+      - ref('players')
+      - ref('seasons')
+      - ref('squad_members')
+      - ref('teams')

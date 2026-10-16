@@ -10,13 +10,13 @@ models:
     columns:
       - name: opta_match_id
         data_type: varchar
-        description: Opta's match ID. Primary key.
+        description: "{{ doc('opta_match_id') }} Primary key."
         data_tests:
           - unique
           - not_null
       - name: opta_home_team_id
         data_type: varchar
-        description: Opta's ID of the home team. Foreign key to teams.
+        description: "{{ doc('opta_team_id') }} The home team. Foreign key to teams."
         data_tests:
           - not_null
           - relationships:
@@ -25,7 +25,7 @@ models:
                 field: opta_team_id
       - name: opta_away_team_id
         data_type: varchar
-        description: Opta's ID of the away team. Foreign key to teams.
+        description: "{{ doc('opta_team_id') }} The away team. Foreign key to teams."
         data_tests:
           - not_null
           - relationships:
@@ -42,7 +42,7 @@ models:
                 values: ['scheduled', 'played']
       - name: season
         data_type: varchar
-        description: Season the match belongs to, e.g. "2026-2027". A season runs from 1 July to 30 June.
+        description: "{{ doc('season') }} Foreign key to seasons."
         data_tests:
           - not_null
           - relationships:

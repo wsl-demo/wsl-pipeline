@@ -10,19 +10,8 @@ The same match carries the same ID in every BBC table, and keeps it when it move
 from fixtures to results.
 {% enddocs %}
 
-{% docs opta_match_id %}
-Opta's match ID: `bbc_match_id` with its `s-` removed by the `opta_id_from_bbc_id`
-macro, which returns null for an ID without the `s-`. Downstream models key matches on it.
-{% enddocs %}
-
 {% docs bbc_player_id %}
 BBC's player ID: `s-` followed by Opta's player ID, e.g. `s-9t8eb24gwj56ucggp7x0n0ewa`.
-{% enddocs %}
-
-{% docs opta_player_id %}
-Opta's player ID: `bbc_player_id` with its `s-` removed by the `opta_id_from_bbc_id`
-macro, which returns null for an ID without the `s-`. The key players share with
-wsl_football; downstream models key players on it.
 {% enddocs %}
 
 {% docs bbc_team_id %}
@@ -31,10 +20,11 @@ Opta ID. For Opta's team ID, join `stg_bbc_sport__match_teams` on `bbc_match_id`
 and `bbc_team_id`.
 {% enddocs %}
 
-{% docs opta_team_id %}
-Opta's team ID, which BBC calls the participant ID, e.g. `5rurqie3qt1qav9ir5mkqinn`
-(Arsenal). Downstream models key teams on it.
-{% enddocs %}
+{#
+    The Opta ID blocks (`opta_match_id`, `opta_player_id`, `opta_team_id`) are in
+    models/_shared__docs.md, since the marts use them too. Staging adds
+    `opta_id_from_bbc_id` to say how it derives them.
+#}
 
 {% docs regulation_time_minutes %}
 The regulation match minute the event happened in: the number before the `'` in

@@ -7,6 +7,8 @@ SELECT
     a.opta_match_id,
     a.opta_player_id,
     a.opta_team_id,
+    -- dates
+    {{ uk_local_date('a.kicked_off_at') }} AS match_date,
     -- strings
     a.season,
     a."position",

@@ -27,7 +27,7 @@ models:
           - unique
           - not_null
       - name: opta_match_id
-        description: "{{ doc('opta_match_id') }} Primary key."
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }} Primary key."
         data_tests:
           - unique
           - not_null

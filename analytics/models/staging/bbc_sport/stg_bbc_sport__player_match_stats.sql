@@ -1,6 +1,6 @@
 -- Kept in the source's long shape: one row per player per match per statistic.
 -- Reshaping to one row per appearance is the intermediate layer's job, in
--- int_player_match_stats__pivoted.
+-- int_player_match_stats_pivoted.
 WITH parsed AS (
     SELECT
         {{ analytics.strip_urn('"match_urn"', 'event') }} AS bbc_match_id,

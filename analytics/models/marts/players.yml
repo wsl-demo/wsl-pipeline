@@ -10,14 +10,16 @@ models:
     columns:
       - name: opta_player_id
         data_type: varchar
-        description: Opta's player ID, the key both sources share. Primary key.
+        description: "{{ doc('opta_player_id') }} Primary key."
         data_tests:
           - not_null
           - unique
       - name: name_first
         data_type: varchar
+        description: BBC's, from the player's latest matchday squad; wsl_football's for a player not yet named in one.
       - name: name_last
         data_type: varchar
+        description: BBC's, from the player's latest matchday squad; wsl_football's for a player not yet named in one.
       - name: name_shirt
         data_type: varchar
         description: Name printed on the shirt. Recorded for only some players.
@@ -28,18 +30,16 @@ models:
           - not_null
       - name: nationality
         data_type: varchar
-        description: >
-          Country name, from wsl_football. Null for players no longer in a
-          current squad, since that source only lists current squads.
+        description: "{{ doc('nationality') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
       - name: nationality_iso_code
         data_type: varchar
-        description: Three-letter country code, e.g. ENG. Not strictly ISO 3166.
+        description: "{{ doc('nationality_iso_code') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
       - name: height_cm
         data_type: integer
-        description: Centimetres. Sparsely recorded.
+        description: "{{ doc('height_cm') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
       - name: weight_kg
         data_type: integer
-        description: Kilograms. Sparsely recorded.
+        description: "{{ doc('weight_kg') }} Null for players no longer in a current squad, since wsl_football lists current squads only."
       - name: birth_date
         data_type: date
-        description: Null for players with no biography, and for the few the source has no date for.
+        description: "{{ doc('birth_date') }} Null for players no longer in a current squad, since wsl_football lists current squads only."

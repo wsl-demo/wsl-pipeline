@@ -9,7 +9,7 @@ models:
     columns:
       - name: season
         data_type: varchar
-        description: Season label, e.g. "2026-2027". Primary key.
+        description: "{{ doc('season') }} Primary key."
         data_tests:
           - unique
           - not_null
@@ -21,6 +21,7 @@ models:
         description: Played plus scheduled matches.
       - name: matches_played
         data_type: integer
+        description: Matches with a result.
       - name: is_current
         data_type: boolean
         description: True for the latest season present in the data. Exactly one season is current.
@@ -28,5 +29,7 @@ models:
           - not_null
       - name: first_match_date
         data_type: date
+        description: Date of the season's first match.
       - name: last_match_date
         data_type: date
+        description: Date of the season's last match, played or scheduled. For the current season, usually a fixture still to come.
