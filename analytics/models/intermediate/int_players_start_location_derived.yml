@@ -1,0 +1,54 @@
+models:
+  - name: int_players_start_location_derived
+    description: |
+      Where each starter lined up at kickoff, as a point on a pitch every
+      formation shares: `start_depth` from the goalkeeper (0) to the front line
+      (1), and `start_width` across the line from the right (near 1) to the left
+      (near 0). It is the slot the formation gave the player, not where they
+      played, and substitutes are never placed.
+
+      The left/right reading is inferred from Opta's numbering (place 2 is the
+      right back, 3 the left), which `fullbacks_start_on_opposite_flanks`
+      checks against BBC's drawing.
+
+      **Grain:** one row per starter per match (`opta_match_id`,
+      `opta_player_id`).
+    data_tests:
+      - unique:
+          column_name: "opta_match_id || '|' || opta_player_id"
+      # The goalkeeper, and only the goalkeeper, is in row 0.
+      - expression_is_true:
+          arguments:
+            expression: "(row_index = 0) = (formation_place = 1)"
+      - expression_is_true:
+          arguments:
+            expression: "start_depth BETWEEN 0 AND 1 AND start_width > 0 AND start_width < 1"
+    columns:
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+      - name: opta_player_id
+        description: "{{ doc('opta_player_id') }}"
+      - name: opta_team_id
+        description: "{{ doc('opta_team_id') }}"
+      - name: season
+        description: "{{ doc('season') }}"
+      - name: formation
+        description: Starting formation as BBC writes it, e.g. "4 - 2 - 3 - 1".
+      - name: formation_place
+        description: The player's place in the formation, 1 to 11, numbered as Opta does.
+      - name: row_index
+        description: The line of the formation the player is in, from the back; 0 is the goalkeeper.
+      - name: slot_index
+        description: The player's place within their line, from 0, which is the right.
+      - name: row_width
+        description: How many players share the line.
+      - name: outfield_line_count
+        description: Lines in front of the goalkeeper, so the `row_index` of the front line; 3 for a 4-4-2, 4 for a 4-2-3-1.
+      - name: start_depth
+        description: Distance from the goalkeeper to the front line, 0 to 1. Lines are evenly spaced, so a back line is at 1/3 in a 4-4-2 and 1/4 in a 4-2-3-1.
+        data_tests:
+          - not_null
+      - name: start_width
+        description: Position across the line, from near 1 (the right) to near 0 (the left), at the middle of the slot's equal share of the line. A line of one is at 0.5.
+        data_tests:
+          - not_null

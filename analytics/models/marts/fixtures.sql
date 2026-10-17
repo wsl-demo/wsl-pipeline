@@ -14,6 +14,9 @@
 --
 -- Season comes from the `season_of` macro on the match's UK date. Other models
 -- call the same macro; none of them depend on this one for it.
+--
+-- The matchday is derived in `int_fixtures_matchday_derived` and is null for a
+-- match that cannot be placed without guessing.
 WITH fixtures AS (
     SELECT
         opta_match_id,
@@ -62,28 +65,31 @@ joined AS (
 )
 
 SELECT
-    opta_match_id,
-    opta_home_team_id,
-    opta_away_team_id,
-    has_result,
-    {{ season_of('match_date') }} AS season,
-    winner_side,
-    tournament_name,
-    venue_name,
-    home_score_fulltime,
-    away_score_fulltime,
+    joined.opta_match_id,
+    joined.opta_home_team_id,
+    joined.opta_away_team_id,
+    joined.has_result,
+    {{ season_of('joined.match_date') }} AS season,
+    matchdays.matchday,
+    joined.winner_side,
+    joined.tournament_name,
+    joined.venue_name,
+    joined.home_score_fulltime,
+    joined.away_score_fulltime,
     -- League points: 3 for a win, 1 for a draw, 0 for a loss. A football
     -- scoring rule rather than a cleanup of the source.
-    CASE winner_side
+    CASE joined.winner_side
         WHEN 'home' THEN 3
         WHEN 'away' THEN 0
         WHEN 'draw' THEN 1
     END AS home_points,
-    CASE winner_side
+    CASE joined.winner_side
         WHEN 'home' THEN 0
         WHEN 'away' THEN 3
         WHEN 'draw' THEN 1
     END AS away_points,
-    match_date,
-    kicked_off_at
+    joined.match_date,
+    joined.kicked_off_at
 FROM joined
+LEFT JOIN {{ ref('int_fixtures_matchday_derived') }} AS matchdays
+    ON joined.opta_match_id = matchdays.opta_match_id

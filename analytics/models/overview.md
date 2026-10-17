@@ -35,7 +35,7 @@ for Opta's. Staging carries both; every model after staging joins on
 | Layer | Built as | What it does |
 | --- | --- | --- |
 | **Staging** (`stg_<source>__<table>`) | Views | One model per raw table, and no joins. Each renames columns, casts text to proper types, removes BBC's URN prefixes, derives Opta IDs, and turns coded text into flags. Each staging model's description lists its grain, what it changes and which raw columns it leaves behind. |
-| **Intermediate** (`int_*`) | Views | Joins and reshapes: fixtures joined to their results, squads joined to their matches, statistics pivoted from one row per statistic to one row per appearance, starts counted by position, assists matched to players by name, every timed action stacked into one shape, each player's time on the pitch derived. Not published. |
+| **Intermediate** (`int_*`) | Views | Joins and reshapes: fixtures joined to their results, squads joined to their matches, statistics pivoted from one row per statistic to one row per appearance, starts counted by position, assists matched to players by name, every timed action stacked into one shape, each player's time on the pitch derived, each start placed on a pitch every formation shares, each fixture placed on a matchday. Not published. |
 | **Marts** | Tables, with enforced contracts | The seven finished tables below. These are what the app receives. |
 
 ## The marts
@@ -43,7 +43,7 @@ for Opta's. Staging carries both; every model after staging joins on
 | Mart | One row per |
 | --- | --- |
 | `fixtures` | Match, with its result where one exists |
-| `match_performances` | Player per match they were named in the squad for, with their statistics and time on the pitch |
+| `match_performances` | Player per match they were named in the squad for, with their statistics, time on the pitch, and where a starter lined up |
 | `match_actions` | Goal, assist, card or substitution, per player involved |
 | `squad_members` | Player per team per season |
 | `players` | Player |

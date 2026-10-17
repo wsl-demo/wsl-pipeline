@@ -161,8 +161,8 @@ prefixes.
 
 | Mart | One row per | Notes |
 | --- | --- | --- |
-| `fixtures` | match | Every listed fixture, with `season`, `has_result` and points. No result does not mean still to come. |
-| `match_performances` | player per match | Starters and the whole bench. Count appearances with `has_appeared`, not with rows. |
+| `fixtures` | match | Every listed fixture, with `season`, `matchday`, `has_result` and points. No result does not mean still to come. |
+| `match_performances` | player per match | Starters and the whole bench. Count appearances with `has_appeared`, not with rows. A starter's `start_depth` and `start_width` place them on a pitch every formation shares; a substitute's context is the row of the player they replaced. |
 | `match_actions` | action per player | Goals, assists, cards and substitutions; a substitution is two rows. Assists are matched to players by name. Test `match_minute` against a player's `entered_`/`left_` columns to find what happened while they were on. |
 | `squad_members` | player per team per season | Inferred from matchday squads, with biography joined in. A player is absent if never named in a squad. |
 | `players` | player | Names and biography only. |

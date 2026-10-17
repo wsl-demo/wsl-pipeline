@@ -5,7 +5,8 @@ unit_tests:
       at 23:30 UTC on 30 June is already 1 July in London), points follow the
       winner, a fixture without a result has no points, and a fixture with a
       result appears once, on the date the result gives even when the fixture
-      listed another.
+      listed another. The matchday is taken from the derived one, and is null
+      where none was derived.
     model: fixtures
     given:
       - input: ref('stg_bbc_sport__matches')
@@ -17,9 +18,12 @@ unit_tests:
         rows:
           - {opta_match_id: "m1", match_date: "2026-05-10", kicked_off_at: "2026-05-10 14:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b"}
           - {opta_match_id: "f1", match_date: "2027-03-01", kicked_off_at: "2027-03-01 15:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b"}
+      - input: ref('int_fixtures_matchday_derived')
+        rows:
+          - {opta_match_id: "m1", matchday: 3}
     expect:
       rows:
-        - {opta_match_id: "m1", has_result: true, season: "2025-2026", match_date: "2026-05-16", home_points: 3, away_points: 0}
+        - {opta_match_id: "m1", has_result: true, season: "2025-2026", match_date: "2026-05-16", matchday: 3, home_points: 3, away_points: 0}
         - {opta_match_id: "m2", has_result: true, season: "2026-2027", match_date: "2026-07-01", home_points: 1, away_points: 1}
         - {opta_match_id: "m3", has_result: true, season: "2026-2027", match_date: "2027-01-15", home_points: 0, away_points: 3}
-        - {opta_match_id: "f1", has_result: false, season: "2026-2027", match_date: "2027-03-01", home_points: null, away_points: null}
+        - {opta_match_id: "f1", has_result: false, season: "2026-2027", match_date: "2027-03-01", matchday: null, home_points: null, away_points: null}

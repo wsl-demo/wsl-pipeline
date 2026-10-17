@@ -15,3 +15,51 @@ unit_tests:
       rows:
         - {opta_match_id: "m1", opta_player_id: "p1", goals: 2, minutes_played: 90, pass_accuracy_percent: 87.5, total_passes: null}
         - {opta_match_id: "m1", opta_player_id: "p2", goals: null, minutes_played: null, pass_accuracy_percent: null, total_passes: 31}
+
+  - name: start_location_scales_to_each_formation
+    description: >
+      Depth is scaled by each team's own number of lines and width by each
+      line's own number of players, so two teams in one match with different
+      shapes each span the whole pitch. Slot 0 is on the right (width near 1),
+      and a line of one sits in the middle.
+    model: int_players_start_location_derived
+    given:
+      - input: ref('stg_bbc_sport__match_pitch_layout')
+        rows:
+          # Home: keeper, two in the back line, one up front (two outfield lines).
+          - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "home", bbc_player_id: "s-h1", opta_player_id: "h1", row_index: 0, slot_index: 0}
+          - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "home", bbc_player_id: "s-h2", opta_player_id: "h2", row_index: 1, slot_index: 0}
+          - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "home", bbc_player_id: "s-h3", opta_player_id: "h3", row_index: 1, slot_index: 1}
+          - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "home", bbc_player_id: "s-h4", opta_player_id: "h4", row_index: 2, slot_index: 0}
+          # Away: keeper and one in each of three lines.
+          - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "away", bbc_player_id: "s-a1", opta_player_id: "a1", row_index: 0, slot_index: 0}
+          - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "away", bbc_player_id: "s-a2", opta_player_id: "a2", row_index: 1, slot_index: 0}
+          - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "away", bbc_player_id: "s-a3", opta_player_id: "a3", row_index: 2, slot_index: 0}
+          - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "away", bbc_player_id: "s-a4", opta_player_id: "a4", row_index: 3, slot_index: 0}
+      - input: ref('stg_bbc_sport__match_teams')
+        rows:
+          - {bbc_match_id: "s-m1", bbc_team_id: "home", opta_team_id: "t-home", formation: "2 - 1"}
+          - {bbc_match_id: "s-m1", bbc_team_id: "away", opta_team_id: "t-away", formation: "1 - 1 - 1"}
+      - input: ref('stg_bbc_sport__match_players')
+        rows:
+          - {bbc_match_id: "s-m1", bbc_player_id: "s-h1", formation_place: 1}
+          - {bbc_match_id: "s-m1", bbc_player_id: "s-h2", formation_place: 2}
+          - {bbc_match_id: "s-m1", bbc_player_id: "s-h3", formation_place: 3}
+          - {bbc_match_id: "s-m1", bbc_player_id: "s-h4", formation_place: 9}
+          - {bbc_match_id: "s-m1", bbc_player_id: "s-a1", formation_place: 1}
+          - {bbc_match_id: "s-m1", bbc_player_id: "s-a2", formation_place: 5}
+          - {bbc_match_id: "s-m1", bbc_player_id: "s-a3", formation_place: 8}
+          - {bbc_match_id: "s-m1", bbc_player_id: "s-a4", formation_place: 9}
+      - input: ref('stg_bbc_sport__matches')
+        rows:
+          - {opta_match_id: "m1", kicked_off_at: "2026-10-18 13:00:00+00:00"}
+    expect:
+      rows:
+        - {opta_player_id: "h1", opta_team_id: "t-home", season: "2026-2027", row_width: 1, outfield_line_count: 2, start_depth: 0.000, start_width: 0.500}
+        - {opta_player_id: "h2", opta_team_id: "t-home", season: "2026-2027", row_width: 2, outfield_line_count: 2, start_depth: 0.500, start_width: 0.750}
+        - {opta_player_id: "h3", opta_team_id: "t-home", season: "2026-2027", row_width: 2, outfield_line_count: 2, start_depth: 0.500, start_width: 0.250}
+        - {opta_player_id: "h4", opta_team_id: "t-home", season: "2026-2027", row_width: 1, outfield_line_count: 2, start_depth: 1.000, start_width: 0.500}
+        - {opta_player_id: "a1", opta_team_id: "t-away", season: "2026-2027", row_width: 1, outfield_line_count: 3, start_depth: 0.000, start_width: 0.500}
+        - {opta_player_id: "a2", opta_team_id: "t-away", season: "2026-2027", row_width: 1, outfield_line_count: 3, start_depth: 0.333, start_width: 0.500}
+        - {opta_player_id: "a3", opta_team_id: "t-away", season: "2026-2027", row_width: 1, outfield_line_count: 3, start_depth: 0.667, start_width: 0.500}
+        - {opta_player_id: "a4", opta_team_id: "t-away", season: "2026-2027", row_width: 1, outfield_line_count: 3, start_depth: 1.000, start_width: 0.500}

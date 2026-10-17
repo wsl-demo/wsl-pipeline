@@ -50,6 +50,12 @@ models:
               arguments:
                 to: ref('seasons')
                 field: season
+      - name: matchday
+        data_type: integer
+        description: >
+          The fixture's place in the season's schedule, from 1; every team plays
+          once per matchday, though not on the same day. Null when it cannot be
+          placed without guessing.
       - name: winner_side
         data_type: varchar
         description: "{{ doc('winner_side') }}"

@@ -12,6 +12,11 @@ models:
     data_tests:
       - unique:
           column_name: "opta_match_id || '|' || opta_player_id"
+      # Every starter is placed and nobody else is, so no start is dropped
+      # from the pitch layout.
+      - expression_is_true:
+          arguments:
+            expression: "(start_depth IS NOT NULL) = is_starter AND (start_width IS NOT NULL) = is_starter"
     columns:
       - name: opta_match_id
         data_type: varchar
@@ -80,6 +85,12 @@ models:
       - name: left_match_minute
         data_type: decimal(4,2)
         description: "{{ doc('match_minute') }} When the player was substituted off or sent off."
+      - name: start_depth
+        data_type: decimal(4,3)
+        description: Where the formation put a starter at kickoff, from the goalkeeper (0) to the front line (1). Lines are evenly spaced, so a back line is at 0.333 in a 4-4-2 and 0.25 in a 4-2-3-1. Null for the bench.
+      - name: start_width
+        data_type: decimal(4,3)
+        description: Where the formation put a starter at kickoff across their line, from near 1 (the right) to near 0 (the left), at the middle of the slot's equal share of the line. Left and right are inferred from Opta's numbering; see int_players_start_location_derived. Null for the bench.
       - name: minutes_played
         data_type: integer
         description: "Minutes the player was on the pitch, from BBC's `minsPlayed`. Never more than 90, so added time is not counted. Null for an unused substitute."

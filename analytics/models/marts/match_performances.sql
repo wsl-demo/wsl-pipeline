@@ -5,6 +5,12 @@
 --
 -- The entered_ and left_ columns are the player's time on the pitch, in the
 -- same form as `match_actions`, so an action can be tested against them.
+--
+-- start_depth and start_width are where the formation put a starter at
+-- kickoff, on a pitch every formation shares (see
+-- int_players_start_location_derived). Null for the bench, who were not
+-- placed. Being per match, they also tell a substitute's context: join a
+-- `substituted_on` action's other player to their row here.
 SELECT
     -- keys
     a.opta_match_id,
@@ -26,6 +32,9 @@ SELECT
     w.left_regulation_minute,
     w.left_injury_minute,
     w.left_match_minute,
+    -- numerics: where the formation put a starter
+    g.start_depth,
+    g.start_width,
     -- numerics: performance, nullable because the source is sparse
     s.minutes_played,
     s.goals,
@@ -51,6 +60,9 @@ INNER JOIN {{ ref('stg_bbc_sport__match_players') }} AS p
 INNER JOIN {{ ref('int_players_time_on_pitch_derived') }} AS w
     ON a.opta_match_id = w.opta_match_id
    AND a.opta_player_id = w.opta_player_id
+LEFT JOIN {{ ref('int_players_start_location_derived') }} AS g
+    ON a.opta_match_id = g.opta_match_id
+   AND a.opta_player_id = g.opta_player_id
 LEFT JOIN {{ ref('int_player_match_stats_pivoted') }} AS s
     ON a.opta_match_id = s.opta_match_id
    AND a.opta_player_id = s.opta_player_id

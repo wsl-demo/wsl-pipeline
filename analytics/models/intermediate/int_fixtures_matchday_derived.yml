@@ -1,0 +1,30 @@
+models:
+  - name: int_fixtures_matchday_derived
+    description: |
+      Each fixture's matchday: its place in the season's schedule, from 1. A
+      team plays once per matchday, but a matchday is not a day: its matches can
+      fall on one weekend, midweek, or weeks apart when one is postponed. BBC
+      sends no matchday, so it is derived from the order each team plays in and
+      the rule that no team plays twice on one matchday.
+
+      A match that cannot be placed without guessing has a null `matchday`.
+      That means the match is out of step with its teams' sequences, not that it
+      was postponed.
+
+      **Grain:** one row per fixture (`opta_match_id`).
+    columns:
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+        data_tests:
+          - unique
+          - not_null
+      - name: season
+        description: "{{ doc('season') }}"
+      - name: matchday
+        description: >
+          The matchday in the season, from 1, or null when it cannot be placed.
+      - name: matchday_placement
+        description: >
+          How the matchday was found: `in_sequence` when both teams' order of
+          play agreed, `filled_gap` when it was the only matchday free for both
+          teams, `unplaced` when no single matchday fits.
