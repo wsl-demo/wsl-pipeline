@@ -54,29 +54,6 @@ latest AS (
         shirt_number
     FROM selections
     WHERE recency_rank = 1
-),
-
--- Ties are broken on the most recent start and then position, which keeps the
--- answer deterministic where a bare mode() would not.
-main_position AS (
-    SELECT
-        season,
-        opta_team_id,
-        opta_player_id,
-        "position" AS most_common_start_position
-    FROM (
-        SELECT
-            season,
-            opta_team_id,
-            opta_player_id,
-            "position",
-            ROW_NUMBER() OVER (
-                PARTITION BY season, opta_team_id, opta_player_id
-                ORDER BY starts DESC, last_started_at DESC, "position"
-            ) AS position_rank
-        FROM {{ ref('int_players_starts_aggregated_by_position') }}
-    ) AS ranked
-    WHERE position_rank = 1
 )
 
 SELECT
@@ -103,7 +80,7 @@ INNER JOIN latest
     ON membership.season = latest.season
    AND membership.opta_team_id = latest.opta_team_id
    AND membership.opta_player_id = latest.opta_player_id
-LEFT JOIN main_position
+LEFT JOIN {{ ref('int_squad_members_start_position_derived') }} AS main_position
     ON membership.season = main_position.season
    AND membership.opta_team_id = main_position.opta_team_id
    AND membership.opta_player_id = main_position.opta_player_id

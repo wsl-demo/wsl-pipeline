@@ -1,0 +1,29 @@
+models:
+  - name: int_players_time_on_pitch_derived
+    description: |
+      When each player in a matchday squad was on the pitch: the moment they
+      entered and the moment they left. A starter enters at kickoff; a player
+      leaves when substituted off or sent off, whichever came first. Both
+      moments are null for an unused substitute, and the leaving moment is null
+      for a player still on at the final whistle, because the source doesn't
+      record when a match ended.
+
+      **Grain:** one row per player per match (`opta_match_id`,
+      `opta_player_id`), starters and the whole bench.
+    columns:
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+      - name: opta_player_id
+        description: "{{ doc('opta_player_id') }}"
+      - name: entered_regulation_minute
+        description: "{{ doc('regulation_minute') }} When the player came on; 0 for a starter."
+      - name: entered_injury_minute
+        description: "{{ doc('injury_minute') }} When the player came on."
+      - name: entered_match_minute
+        description: "{{ doc('match_minute') }} When the player came on; 0.00 for a starter."
+      - name: left_regulation_minute
+        description: "{{ doc('regulation_minute') }} When the player was substituted off or sent off."
+      - name: left_injury_minute
+        description: "{{ doc('injury_minute') }} When the player was substituted off or sent off."
+      - name: left_match_minute
+        description: "{{ doc('match_minute') }} When the player was substituted off or sent off."

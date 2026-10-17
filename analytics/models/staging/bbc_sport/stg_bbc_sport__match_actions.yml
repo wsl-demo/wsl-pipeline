@@ -8,28 +8,6 @@ models:
       `action_index`, `sub_index`, tested unique). BBC numbers the players who
       acted for each side (`action_index`) and each of a player's actions
       (`sub_index`).
-
-      **What staging changes**
-      - IDs: URN prefixes removed; Opta IDs derived from BBC's.
-      - Raw `type` becomes one flag per kind of action.
-      - The displayed minute (`90'+4`) becomes a regulation minute, added
-        minutes and a period.
-
-      **Not carried over:** `source_side` (`bbc_team_id` already identifies
-      the side), `actionType` (`goal` or `card`, implied by the flags),
-      `playerName` (in `stg_bbc_sport__match_players`), `typeLabel_*` and
-      `timeLabel_accessible` (display copies of `type` and the minute), and
-      `source_match_id` (BBC's page slug, on `stg_bbc_sport__matches`).
-
-      **Caveats**
-      - **Own goals** are listed under the team they count for, so their
-        `bbc_team_id` is not the scorer's team.
-      - **Goal flags don't overlap:** `is_goal` is only for goals that are
-        neither penalties nor own goals. To count every goal, use
-        `is_goal OR is_penalty OR is_own_goal`; that total matches every
-        full-time score.
-      - Single yellow cards are not here; they are in
-        `stg_bbc_sport__match_player_cards`.
     data_tests:
       - unique:
           column_name: "bbc_match_id || '|' || bbc_team_id || '|' || action_index || '|' || sub_index"

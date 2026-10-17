@@ -1,82 +1,30 @@
 models:
-  - name: matchday_squad_members
+  - name: match_performances
     description: >
-      One row per player per match they were named in the squad for, starters
-      and the whole bench. An unused substitute is part of the squad but did not
-      appear; use has_appeared to count appearances.
+      One row per player per match they were named in the squad for, bench
+      included; count appearances with has_appeared. The entered_ and left_
+      columns bound the player's time on the pitch; left_ is null if they were
+      on at the final whistle. Times are to the minute, so an action in a
+      substitution's minute falls in both players' windows.
     config:
       contract:
         enforced: true
     data_tests:
       - unique:
           column_name: "opta_match_id || '|' || opta_player_id"
-    # Semantic layer: sum these metrics over `season` for a player's season
-    # totals. The season in progress needs no special case, because it is just
-    # the season whose matches are not all played yet.
-    semantic_model:
-      enabled: true
-    agg_time_dimension: match_date
-    derived_semantics:
-      entities:
-        - name: match_player
-          type: primary
-          expr: "opta_match_id || '|' || opta_player_id"
-    metrics:
-      - name: squad_selections
-        description: Matchday squads the player was named in, bench included.
-        type: simple
-        agg: count
-        expr: 1
-      - name: appearances
-        description: Matches the player started or came on in.
-        type: simple
-        agg: sum_boolean
-        expr: has_appeared
-      - name: starts
-        description: Matches the player started. Substitute appearances are not counted.
-        type: simple
-        agg: sum_boolean
-        expr: is_starter
-      - name: minutes_played
-        description: Excludes matches where the source recorded no minutes, including unused substitutes.
-        type: simple
-        agg: sum
-        expr: minutes_played
-      - name: goals
-        description: Null, not zero, for a goalkeeper, whose goals the source does not record.
-        type: simple
-        agg: sum
-        expr: goals
-      - name: assists
-        description: Assists the player made, as the source records them.
-        type: simple
-        agg: sum
-        expr: assists
-      - name: shots_total
-        description: Shots the player took, on and off target.
-        type: simple
-        agg: sum
-        expr: shots_total
-      - name: shots_on_target
-        description: Shots the player took that were on target. A subset of shots_total.
-        type: simple
-        agg: sum
-        expr: shots_on_target
     columns:
       - name: opta_match_id
         data_type: varchar
         description: "{{ doc('opta_match_id') }}"
-        entity: foreign
         data_tests:
           - not_null
           - relationships:
               arguments:
-                to: ref('matches')
+                to: ref('fixtures')
                 field: opta_match_id
       - name: opta_player_id
         data_type: varchar
         description: "{{ doc('opta_player_id') }}"
-        entity: foreign
         data_tests:
           - not_null
           - relationships:
@@ -86,7 +34,6 @@ models:
       - name: opta_team_id
         data_type: varchar
         description: "{{ doc('opta_team_id') }} The team the player was named for in the match."
-        entity: foreign
         data_tests:
           - not_null
           - relationships:
@@ -96,20 +43,16 @@ models:
       - name: match_date
         data_type: date
         description: "{{ doc('match_date') }}"
-        granularity: day
-        dimension: time
         data_tests:
           - not_null
       - name: season
         data_type: varchar
         description: "{{ doc('season') }}"
-        dimension: categorical
         data_tests:
           - not_null
       - name: position
         data_type: varchar
         description: "{{ doc('position') }}"
-        dimension: categorical
       - name: substituted_on_reason
         data_type: varchar
         description: "{{ doc('substituted_on_reason') }}"
@@ -119,12 +62,24 @@ models:
       - name: shirt_number
         data_type: integer
         description: "{{ doc('shirt_number') }}"
-      - name: substituted_on_minute
+      - name: entered_regulation_minute
         data_type: integer
-        description: "The minute being played when the player came on, counted from kickoff, so `63:57` on the match clock is the 64th minute. Null if they didn't come on."
-      - name: substituted_off_minute
+        description: "{{ doc('regulation_minute') }} When the player came on; 0 for a starter."
+      - name: entered_injury_minute
         data_type: integer
-        description: "The minute being played when the player was taken off, counted from kickoff, so `63:57` on the match clock is the 64th minute and `45:00` the 46th. Null if they weren't taken off."
+        description: "{{ doc('injury_minute') }} When the player came on."
+      - name: entered_match_minute
+        data_type: decimal(4,2)
+        description: "{{ doc('match_minute') }} When the player came on; 0.00 for a starter."
+      - name: left_regulation_minute
+        data_type: integer
+        description: "{{ doc('regulation_minute') }} When the player was substituted off or sent off."
+      - name: left_injury_minute
+        data_type: integer
+        description: "{{ doc('injury_minute') }} When the player was substituted off or sent off."
+      - name: left_match_minute
+        data_type: decimal(4,2)
+        description: "{{ doc('match_minute') }} When the player was substituted off or sent off."
       - name: minutes_played
         data_type: integer
         description: "Minutes the player was on the pitch, from BBC's `minsPlayed`. Never more than 90, so added time is not counted. Null for an unused substitute."
@@ -167,42 +122,12 @@ models:
       - name: is_starter
         data_type: boolean
         description: "{{ doc('is_starter') }}"
-        dimension: categorical
       - name: is_captain
         data_type: boolean
         description: "{{ doc('is_captain') }}"
-        dimension: categorical
       - name: has_appeared
         data_type: boolean
         description: "True for starters and for substitutes who came on; false for the unused bench, who are still part of the matchday squad."
         data_tests:
           - not_null
 
-# Metrics built from other metrics go at the top level: under the model, dbt
-# 2.0.6 parses every metric as a simple one.
-metrics:
-  - name: goals_per_90
-    label: Goals per 90 minutes
-    description: >
-      Goals scaled to a full match. Fairer than raw goals for players who often
-      come off the bench.
-    type: derived
-    expr: goals * 90.0 / minutes_played
-    input_metrics:
-      - name: goals
-      - name: minutes_played
-  - name: goal_contributions
-    label: Goals and assists
-    description: >
-      Goals plus assists. Null for a goalkeeper, because their goals are null
-      and adding null gives null.
-    type: derived
-    expr: goals + assists
-    input_metrics:
-      - name: goals
-      - name: assists
-  - name: shot_accuracy
-    description: Share of shots that were on target.
-    type: ratio
-    numerator: shots_on_target
-    denominator: shots_total

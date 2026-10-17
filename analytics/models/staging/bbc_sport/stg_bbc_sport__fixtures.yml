@@ -1,27 +1,13 @@
 models:
   - name: stg_bbc_sport__fixtures
     description: |
-      Matches still to be played, from BBC's fixtures page (raw
-      `bbc_sport.fixtures`). A match leaves the page once it has been played and
-      then appears in `stg_bbc_sport__matches` under the same IDs.
+      Matches BBC's fixtures pages listed as still to come when each page was
+      fetched, one page per month (raw `bbc_sport.fixtures`). The raw table is
+      replaced on every run with what the saved pages list, so it holds no
+      history, and a past month's page is not fetched again: a row here does not
+      mean the match has yet to be played.
 
-      **Grain:** one row per scheduled match (`opta_match_id`, tested unique).
-
-      **What staging changes**
-      - The match ID arrives without the URN prefix other BBC tables carry, so it
-        is used as sent; the Opta ID is derived from it.
-      - Teams arrive only as Opta IDs (BBC's participant IDs), so there is no BBC
-        team slug here.
-      - The tournament URN loses its prefix, as on results.
-      - The page gives the date without a year ("Sunday 18th October") under a
-        month heading ("2026-10"); staging combines the two into a real date.
-      - Kickoff is a UK local time or "TBC"; staging turns it into a timestamp
-        and flags TBC kickoffs.
-
-      **Not carried over:** `home` and `away` (team names: take them from
-      `stg_bbc_sport__match_teams`), `description` (a sentence repeating the
-      teams and kickoff time), `tournament_name` (= `tournament_disambiguatedName`
-      here) and `tournament_thingsGuid`.
+      **Grain:** one row per listed match (`opta_match_id`, tested unique).
     columns:
       - name: bbc_match_id
         description: "{{ doc('bbc_match_id') }}"

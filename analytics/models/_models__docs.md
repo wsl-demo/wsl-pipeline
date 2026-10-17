@@ -37,12 +37,37 @@ Season label, e.g. "2026-2027". A season runs from 1 July to 30 June; the
 {% enddocs %}
 
 {% docs match_date %}
-The day the match is played or scheduled for.
+The day of the match in the UK. Once there is a result, the day it was
+played; before that, the day BBC listed it for.
 {% enddocs %}
 
 {% docs kicked_off_at %}
 Kickoff, as an absolute timestamp, in UK local time. Null
-for a scheduled fixture whose time is still TBC.
+for a fixture without a result whose time BBC listed as TBC.
+{% enddocs %}
+
+{#
+    A moment in a match. BBC labels one with the minute being played and any
+    added time, e.g. `45'+3`; these three columns split that label and recombine
+    it. The source has minutes only, so two things in the same minute cannot be
+    put in order.
+#}
+
+{% docs regulation_minute %}
+The minute being played, without added time: 45 for `45'+3`, 64 for `64'`. Use
+it for durations: subtracting two gives the minutes between them with added
+time counted as zero length, the same convention as minutes played. The source
+doesn't record how long added time lasted, so that is the closest it allows.
+{% enddocs %}
+
+{% docs injury_minute %}
+The minute of added time: 3 for `45'+3`; 0 outside added time.
+{% enddocs %}
+
+{% docs match_minute %}
+The moment as one exact decimal, e.g. 45.03 for `45'+3` and 46.00 for `46'`. It
+sorts in match order, so use it to order moments and to test whether one falls
+between two others. It is not a duration: subtract `regulation_minute` instead.
 {% enddocs %}
 
 {#  Matches  #}
@@ -53,21 +78,21 @@ Competition name, e.g. "Women's Super League".
 
 {% docs venue_name %}
 Stadium name as BBC showed it for the match, e.g. "Joie Stadium". One venue can
-appear under more than one name over time. Null for a scheduled match, since
-the fixtures page does not carry it.
+appear under more than one name over time. Null for a match without a result,
+since fixtures listings do not carry it.
 {% enddocs %}
 
 {% docs winner_side %}
-`home`, `away` or `draw`. Null until the match is played.
+`home`, `away` or `draw`. Null for a match without a result.
 {% enddocs %}
 
 {% docs score_fulltime %}
-Goals the side scored, own goals included. Null until the match is played.
+Goals the side scored, own goals included. Null for a match without a result.
 {% enddocs %}
 
 {% docs points %}
 League points the side earned: 3 for a win, 1 for a draw, 0 for a loss. Null
-until the match is played.
+for a match without a result.
 {% enddocs %}
 
 {#  Teams  #}

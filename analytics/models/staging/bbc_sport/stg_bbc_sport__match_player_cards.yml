@@ -8,22 +8,6 @@ models:
       raw table is unique on match, player and `card_index`, which staging
       does not carry over. A player with two cards in a match (20 so far) has
       two rows that only their time tells apart.
-
-      **What staging changes**
-      - IDs: URN prefixes removed; Opta IDs derived from BBC's.
-      - Raw `type` becomes one flag per kind of card.
-      - The displayed minute (`90'+4`) becomes a regulation minute, added
-        minutes and a period.
-
-      **Not carried over:** `card_index` (0 for a player's first card in the
-      match, 1 for a second), `timeLabel_accessible` (screen-reader copy of
-      the minute), and `source_match_id` (BBC's page slug, on
-      `stg_bbc_sport__matches`).
-
-      **Reading the cards:** a player sent off for a second booking has two
-      rows, the first yellow (`is_yellow_card`) and then the second
-      (`is_second_yellow`). Second yellows and straight reds also appear in
-      `stg_bbc_sport__match_actions`.
     columns:
       - name: bbc_match_id
         description: "{{ doc('bbc_match_id') }}"

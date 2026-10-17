@@ -4,7 +4,7 @@ SELECT DISTINCT
     season,
     opta_team_id,
     opta_player_id
-FROM {{ ref('matchday_squad_members') }}
+FROM {{ ref('match_performances') }}
 EXCEPT
 SELECT
     season,

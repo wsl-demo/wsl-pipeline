@@ -18,8 +18,9 @@ exposures:
       Changing a mart's columns changes what the app receives; each mart's
       enforced contract makes that change deliberate.
     depends_on:
-      - ref('matches')
-      - ref('matchday_squad_members')
+      - ref('fixtures')
+      - ref('match_actions')
+      - ref('match_performances')
       - ref('players')
       - ref('seasons')
       - ref('squad_members')

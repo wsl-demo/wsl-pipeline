@@ -7,26 +7,6 @@ models:
 
       **Grain:** one row per player per match (`opta_match_id`,
       `opta_player_id`, tested unique).
-
-      **What this step does**
-      - Pivots `stg_bbc_sport__player_match_stats` from one row per statistic
-        to one column per statistic. The statistics are listed by name;
-        staging tests `stat_name` against the same list, so a new or renamed
-        statistic fails that test instead of silently going missing here.
-      - Renames each statistic. Most names translate directly; the one that
-        does not is `totalAssists`, which BBC labels "Chances created" and
-        which becomes `chances_created`.
-      - Casts counts to integers, guarded by
-        `player_count_stats_are_whole_numbers`; the two percentages stay
-        fractional.
-
-      **Not carried over:** `penaltySave` and `penaltyMiss`, which BBC shows
-      only for a player who saved or missed a penalty.
-
-      **Nulls:** a statistic BBC doesn't show for a player is null, not zero.
-      Each column says who it is null for.
-
-      **Used by:** `matchday_squad_members`.
     data_tests:
       - unique:
           column_name: "opta_match_id || '|' || opta_player_id"

@@ -1,0 +1,25 @@
+unit_tests:
+  - name: fixtures_season_result_and_points
+    description: >
+      Season follows the UK date of the match with a 1 July boundary (a kickoff
+      at 23:30 UTC on 30 June is already 1 July in London), points follow the
+      winner, a fixture without a result has no points, and a fixture with a
+      result appears once, on the date the result gives even when the fixture
+      listed another.
+    model: fixtures
+    given:
+      - input: ref('stg_bbc_sport__matches')
+        rows:
+          - {opta_match_id: "m1", kicked_off_at: "2026-05-16 14:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b", winner_side: "home"}
+          - {opta_match_id: "m2", kicked_off_at: "2026-06-30 23:30:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b", winner_side: "draw"}
+          - {opta_match_id: "m3", kicked_off_at: "2027-01-15 12:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b", winner_side: "away"}
+      - input: ref('stg_bbc_sport__fixtures')
+        rows:
+          - {opta_match_id: "m1", match_date: "2026-05-10", kicked_off_at: "2026-05-10 14:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b"}
+          - {opta_match_id: "f1", match_date: "2027-03-01", kicked_off_at: "2027-03-01 15:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b"}
+    expect:
+      rows:
+        - {opta_match_id: "m1", has_result: true, season: "2025-2026", match_date: "2026-05-16", home_points: 3, away_points: 0}
+        - {opta_match_id: "m2", has_result: true, season: "2026-2027", match_date: "2026-07-01", home_points: 1, away_points: 1}
+        - {opta_match_id: "m3", has_result: true, season: "2026-2027", match_date: "2027-01-15", home_points: 0, away_points: 3}
+        - {opta_match_id: "f1", has_result: false, season: "2026-2027", match_date: "2027-03-01", home_points: null, away_points: null}

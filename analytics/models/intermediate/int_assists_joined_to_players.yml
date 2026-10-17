@@ -1,0 +1,19 @@
+models:
+  - name: int_assists_joined_to_players
+    description: |
+      Every assist in a played match, with the player who made it. BBC names
+      the player only by the shortened name on the match page, so it is matched
+      among the squad members whose statistics credit them with an assist in
+      that match, since two players in a squad can share a shortened name.
+      Assists in the same minute by the same player have identical rows.
+
+      **Grain:** one row per assist.
+    columns:
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+      - name: opta_player_id
+        description: "{{ doc('opta_player_id') }} Null if the name matched no one credited with an assist, or more than one."
+      - name: regulation_minute
+        description: "{{ doc('regulation_minute') }}"
+      - name: injury_minute
+        description: "{{ doc('injury_minute') }}"

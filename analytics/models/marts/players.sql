@@ -6,14 +6,28 @@
 -- matchday squad; wsl_football's squad lists know everyone in a current squad,
 -- including players not yet named in a match. Names prefer BBC's, falling back
 -- to wsl_football's; biography comes only from wsl_football.
-WITH latest_squad_selection AS (
+WITH selections AS (
+    SELECT
+        opta_player_id,
+        name_first,
+        name_last,
+        name_shirt,
+        display_name,
+        ROW_NUMBER() OVER (
+            PARTITION BY opta_player_id
+            ORDER BY kicked_off_at DESC, opta_match_id DESC
+        ) AS recency_rank
+    FROM {{ ref('int_players_joined_to_matches') }}
+),
+
+latest_squad_selection AS (
     SELECT
         opta_player_id,
         name_first,
         name_last,
         name_shirt,
         display_name
-    FROM {{ ref('int_players_joined_to_matches') }}
+    FROM selections
     WHERE recency_rank = 1
 ),
 

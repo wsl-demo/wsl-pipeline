@@ -82,3 +82,14 @@
     else {{ minute_column }} - ({{ period_regulation_end(period_column) }})
   end
 {% endmacro %}
+
+{#
+  One exact decimal for a moment in the match, in the form BBC labels it with:
+  `45'+3` becomes 45.03 and `46'` becomes 46.00. Added time only happens at the
+  end of a period, so these sort in match order and can be compared with
+  BETWEEN. They are not durations: 46.00 - 45.03 is not how long passed.
+  Decimal rather than float, so a moment computed in two places compares equal.
+#}
+{% macro match_minute(regulation_minute_column, injury_minute_column) %}
+  cast({{ regulation_minute_column }} + {{ injury_minute_column }} / 100.0 as decimal(4, 2))
+{% endmacro %}

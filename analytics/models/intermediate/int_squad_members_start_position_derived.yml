@@ -1,0 +1,22 @@
+models:
+  - name: int_squad_members_start_position_derived
+    description: |
+      The position each player started in most often, worked out separately
+      for each team and season, because a player can change both. Ties go to
+      the position of the most recent start.
+
+      **Grain:** one row per player per team per season, for players who
+      started at least once.
+    columns:
+      - name: season
+        description: "{{ doc('season') }}"
+      - name: opta_team_id
+        description: "{{ doc('opta_team_id') }}"
+      - name: opta_player_id
+        description: "{{ doc('opta_player_id') }}"
+      # The only test here that can fail: the grain follows from the
+      # ROW_NUMBER filter, and the keys are tested upstream.
+      - name: most_common_start_position
+        description: "{{ doc('position') }} The one the player started in most often."
+        data_tests:
+          - not_null

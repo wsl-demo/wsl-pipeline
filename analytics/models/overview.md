@@ -1,7 +1,7 @@
 {% docs __overview__ %}
 # WSL pipeline
 
-Women's Super League data, from two data sources, turned into six tested
+Women's Super League data, from two data sources, turned into seven tested
 tables that a web app serves. This site documents every step in between. The
 lineage graph shows how the models connect; this page explains what the data
 means and why each layer exists.
@@ -10,7 +10,7 @@ means and why each layer exists.
 
 | Source | What it holds | Used for |
 | --- | --- | --- |
-| `bbc_sport` | BBC Sport's page for every played match (score, squads, goals, cards, statistics) and its fixtures page for matches still to come | Everything about matches and who played in them |
+| `bbc_sport` | BBC Sport's page for every played match (score, squads, goals, cards, statistics) and its fixtures pages listing matches to come | Everything about matches and who played in them |
 | `wsl_football` | The league's own site: the players in each club's current squad | Player biography only: nationality, birth date, height, weight |
 
 Both are written to CSV and loaded into the `raw` schema as text. Which team a
@@ -35,21 +35,22 @@ for Opta's. Staging carries both; every model after staging joins on
 | Layer | Built as | What it does |
 | --- | --- | --- |
 | **Staging** (`stg_<source>__<table>`) | Views | One model per raw table, and no joins. Each renames columns, casts text to proper types, removes BBC's URN prefixes, derives Opta IDs, and turns coded text into flags. Each staging model's description lists its grain, what it changes and which raw columns it leaves behind. |
-| **Intermediate** (`int_*`) | Views | Joins and reshapes: fixtures combined with results, squads joined to their matches, statistics pivoted from one row per statistic to one row per appearance, starts counted by position. Not published. |
-| **Marts** | Tables, with enforced contracts | The six finished tables below. These are what the app receives. |
+| **Intermediate** (`int_*`) | Views | Joins and reshapes: fixtures joined to their results, squads joined to their matches, statistics pivoted from one row per statistic to one row per appearance, starts counted by position, assists matched to players by name, every timed action stacked into one shape, each player's time on the pitch derived. Not published. |
+| **Marts** | Tables, with enforced contracts | The seven finished tables below. These are what the app receives. |
 
 ## The marts
 
 | Mart | One row per |
 | --- | --- |
-| `matches` | Match, played or scheduled |
-| `matchday_squad_members` | Player per match they were named in the squad for, with their statistics |
+| `fixtures` | Match, with its result where one exists |
+| `match_performances` | Player per match they were named in the squad for, with their statistics and time on the pitch |
+| `match_actions` | Goal, assist, card or substitution, per player involved |
 | `squad_members` | Player per team per season |
 | `players` | Player |
 | `teams` | Team |
 | `seasons` | Season |
 
-`publish_marts`, a Dagster asset outside dbt, copies all six into the app's
+`publish_marts`, a Dagster asset outside dbt, copies all seven into the app's
 Postgres after every model builds and every test passes. The `wsl_app`
 exposure records that dependency.
 

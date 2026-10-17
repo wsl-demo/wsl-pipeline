@@ -1,4 +1,5 @@
--- Scheduled matches. Teams are named by their Opta ID, which BBC calls the
+-- Matches as BBC's fixtures pages listed them when fetched, which may since
+-- have been played. Teams are named by their Opta ID, which BBC calls the
 -- participant ID, so no lookup is needed to relate them to played matches.
 --
 -- `date_heading` carries no year ("Sunday 18th October"), so the date is built
@@ -27,8 +28,21 @@ WITH parsed AS (
                 '0'
             ) AS date
         ) AS match_date,
-        NULLIF("kickoff_time", 'TBC') AS kickoff_time_local
+        NULLIF("kickoff_time", 'TBC') AS kickoff_time_local,
+        "month" AS listed_month
     FROM {{ source('bbc_sport', 'fixtures') }}
+),
+
+-- Past months' pages are not re-fetched, so a match rescheduled into a later
+-- month is listed under both. The latest month is where BBC lists it now.
+latest_listing AS (
+    SELECT
+        *,
+        ROW_NUMBER() OVER (
+            PARTITION BY bbc_match_id
+            ORDER BY listed_month DESC
+        ) AS listing_rank
+    FROM parsed
 )
 
 SELECT
@@ -45,4 +59,5 @@ SELECT
         WHEN kickoff_time_local IS NOT NULL
         THEN {{ uk_local_timestamp('match_date', 'kickoff_time_local') }}
     END AS kicked_off_at
-FROM parsed
+FROM latest_listing
+WHERE listing_rank = 1

@@ -4,6 +4,6 @@ SELECT
     opta_match_id,
     opta_player_id,
     minutes_played
-FROM {{ ref('matchday_squad_members') }}
+FROM {{ ref('match_performances') }}
 WHERE NOT has_appeared
   AND COALESCE(minutes_played, 0) > 0

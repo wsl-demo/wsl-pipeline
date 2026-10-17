@@ -1,8 +1,7 @@
 models:
   - name: seasons
     description: >
-      One row per season in the data, from the earliest match to the latest
-      scheduled fixture. A season runs from 1 July to 30 June.
+      One row per season in the data, from the earliest fixture to the latest. A season runs from 1 July to 30 June.
     config:
       contract:
         enforced: true
@@ -18,7 +17,7 @@ models:
         description: Number of distinct teams that have a match in the season.
       - name: matches_total
         data_type: integer
-        description: Played plus scheduled matches.
+        description: Fixtures listed, with or without a result.
       - name: matches_played
         data_type: integer
         description: Matches with a result.
@@ -32,4 +31,4 @@ models:
         description: Date of the season's first match.
       - name: last_match_date
         data_type: date
-        description: Date of the season's last match, played or scheduled. For the current season, usually a fixture still to come.
+        description: Date of the season's last match, with or without a result. For the current season, usually a fixture still to come.

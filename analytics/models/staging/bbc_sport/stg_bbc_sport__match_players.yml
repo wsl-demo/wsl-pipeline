@@ -7,32 +7,6 @@ models:
 
       **Grain:** one row per player per match (`bbc_match_id`,
       `bbc_player_id`, tested unique).
-
-      **What staging changes**
-      - IDs: URN prefixes removed; Opta IDs derived from BBC's, including for
-        the players in each substitution.
-      - `position` is nulled for the bench, where BBC writes "Substitute".
-      - Two text fields become flags (`is_starter`, `is_captain`).
-      - The substitution clock (`63:57`) is turned into seconds, the minute
-        being played, and that minute split into regulation and added time.
-
-      **Not carried over**
-      - Repeats of a staged column: `teamUrn` (= `team_urn`), `name_short`
-        (= `displayName`), `source_match_id` (BBC's page slug, on
-        `stg_bbc_sport__matches`).
-      - Names held elsewhere: `teamName`, `substitutedOn_playerOffName`,
-        `substitutedOff_playerOnName` (join on the player IDs instead).
-      - Other forms of the substitution time: `substitutedOn_timeMin`,
-        `substitutedOff_timeMin` (the minute as displayed, e.g. `90'+3`) and
-        `substitutedOn_timestamp`, `substitutedOff_timestamp` (wall-clock
-        time). Staging derives everything from `*_timeMinSec` instead.
-      - Cards: `card_type_*` and `card_time_*` (see
-        `stg_bbc_sport__match_player_cards`). `accessibleText`
-        (screen-reader text).
-
-      **Reading substitutions:** each substitution appears twice, once on
-      the player who went off (`substituted_off_*`) and once on the player who
-      came on (`substituted_on_*`), with the same time on both.
     data_tests:
       - expression_is_true:
           arguments:

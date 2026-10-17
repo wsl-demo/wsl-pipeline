@@ -1,12 +1,18 @@
 models:
-  - name: matches
+  - name: fixtures
     description: >
-      One row per match, played or scheduled. A match keeps its opta_match_id from
-      fixture to result, so status changes while identity does not. Result
-      columns are null until the match is played.
+      One row per fixture: every match BBC has listed, with its result where
+      one exists. A match keeps its opta_match_id from fixture to result.
+      Result columns are null while there is no result, which does not mean
+      the match is still to come: BBC's fixtures listings are not re-fetched
+      once their month has passed.
     config:
       contract:
         enforced: true
+    data_tests:
+      - expression_is_true:
+          arguments:
+            expression: "not has_result or (home_points is not null and away_points is not null)"
     columns:
       - name: opta_match_id
         data_type: varchar
@@ -32,14 +38,9 @@ models:
               arguments:
                 to: ref('teams')
                 field: opta_team_id
-      - name: match_status
-        data_type: varchar
-        description: "`scheduled` until a result exists, then `played`."
-        data_tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: ['scheduled', 'played']
+      - name: has_result
+        data_type: boolean
+        description: "True when BBC has a result for the match. False says only that no result has been collected, not that the match is still to come."
       - name: season
         data_type: varchar
         description: "{{ doc('season') }}"

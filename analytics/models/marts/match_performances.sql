@@ -2,6 +2,9 @@
 -- and the whole bench. An unused substitute is part of the squad for that
 -- match but did not appear; `has_appeared` tells them apart, so count
 -- appearances with it rather than with rows.
+--
+-- The entered_ and left_ columns are the player's time on the pitch, in the
+-- same form as `match_actions`, so an action can be tested against them.
 SELECT
     -- keys
     a.opta_match_id,
@@ -14,10 +17,15 @@ SELECT
     a."position",
     p.substituted_on_reason,
     p.substituted_off_reason,
-    -- numerics: squad and substitution
+    -- numerics: squad
     a.shirt_number,
-    p.substituted_on_minute,
-    p.substituted_off_minute,
+    -- numerics: time on the pitch
+    w.entered_regulation_minute,
+    w.entered_injury_minute,
+    w.entered_match_minute,
+    w.left_regulation_minute,
+    w.left_injury_minute,
+    w.left_match_minute,
     -- numerics: performance, nullable because the source is sparse
     s.minutes_played,
     s.goals,
@@ -40,6 +48,9 @@ FROM {{ ref('int_players_joined_to_matches') }} AS a
 INNER JOIN {{ ref('stg_bbc_sport__match_players') }} AS p
     ON a.opta_match_id = p.opta_match_id
    AND a.opta_player_id = p.opta_player_id
+INNER JOIN {{ ref('int_players_time_on_pitch_derived') }} AS w
+    ON a.opta_match_id = w.opta_match_id
+   AND a.opta_player_id = w.opta_player_id
 LEFT JOIN {{ ref('int_player_match_stats_pivoted') }} AS s
     ON a.opta_match_id = s.opta_match_id
    AND a.opta_player_id = s.opta_player_id

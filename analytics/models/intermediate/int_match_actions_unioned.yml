@@ -1,0 +1,24 @@
+models:
+  - name: int_match_actions_unioned
+    description: |
+      Goals, assists, cards and substitutions from their separate sources,
+      stacked into one shape with one way of saying when each happened. Feeds
+      both the match_actions mart and each player's time on the pitch, so the
+      two agree on when a player came on or left.
+
+      **Grain:** one row per action per player; a substitution is two rows.
+    columns:
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+      - name: opta_player_id
+        description: "{{ doc('opta_player_id') }} The player the action belongs to."
+      - name: opta_other_player_id
+        description: "For a substitution, the other player in the swap. Null for other actions."
+      - name: action_type
+        description: "What happened; the match_actions mart lists the values."
+      - name: regulation_minute
+        description: "{{ doc('regulation_minute') }}"
+      - name: injury_minute
+        description: "{{ doc('injury_minute') }}"
+      - name: match_minute
+        description: "{{ doc('match_minute') }}"

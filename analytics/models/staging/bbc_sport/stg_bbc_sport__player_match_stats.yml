@@ -7,18 +7,6 @@ models:
 
       **Grain:** one row per player per match per statistic (`bbc_match_id`,
       `bbc_player_id`, `stat_name`, tested unique).
-
-      **What staging changes:** URN prefixes removed; Opta IDs derived from
-      BBC's; `stat_value` and `stat_index` cast from text; columns renamed.
-
-      **Not carried over:** `source_match_id` (BBC's page slug, on
-      `stg_bbc_sport__matches`).
-
-      **Which statistics a player has varies.** Every squad member has some
-      rows, but a statistic is missing rather than zero when BBC doesn't
-      show it: `minsPlayed` is missing for unused substitutes, `shotsSaved`
-      exists only for the starting goalkeepers, and `penaltySave` and `penaltyMiss` only
-      when they happened.
     data_tests:
       - unique:
           column_name: "bbc_match_id || '|' || bbc_player_id || '|' || stat_name"

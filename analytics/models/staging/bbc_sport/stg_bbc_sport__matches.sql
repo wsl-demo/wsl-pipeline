@@ -36,7 +36,10 @@ WITH parsed AS (
         "away_id" AS opta_away_team_id,
         CAST("away_runningScores_halftime" AS integer) AS away_score_halftime,
         CAST("away_runningScores_fulltime" AS integer) AS away_score_fulltime,
-        "winner" AS winner_side
+        "winner" AS winner_side,
+        -- JSON text, as sent; parsing it changes the grain, so that happens
+        -- downstream.
+        "groupedActions" AS grouped_actions
     FROM {{ source('bbc_sport', 'matches') }}
 )
 SELECT
@@ -61,5 +64,6 @@ SELECT
     opta_away_team_id,
     away_score_halftime,
     away_score_fulltime,
-    winner_side
+    winner_side,
+    grouped_actions
 FROM parsed

@@ -14,7 +14,7 @@ sources:
   - name: bbc_sport
     description: >
       Women's Super League match data sourced from BBC Sport: each played
-      match's page, and the fixtures page for matches still to come.
+      match's page, and the fixtures pages listing matches to come.
     schema: raw
     loader: just setup
     tables:
@@ -117,6 +117,9 @@ sources:
           - name: venue_urn
             data_type: varchar
             description: "BBC's venue URN: `urn:bbc:sportsdata:football:venue:` followed by `s-` and an ID."
+          - name: groupedActions
+            data_type: varchar
+            description: "Actions the match page lists by team, in groups, as JSON text. Only \"Assists\" so far, with labels such as `M. Fowler (38', 45'+2)`. Null for matches with none."
           - name: source_fetched_at
             data_type: varchar
             description: "When the data was fetched, as an ISO timestamp. The source's `loaded_at_field`."
@@ -509,9 +512,11 @@ sources:
 
       - name: fixtures
         description: >
-          BBC's fixtures page: one row per match still to be played. A match
-          leaves the page once played and appears in `matches` under the same
-          ID. Staged by `stg_bbc_sport__fixtures`.
+          BBC's fixtures pages, one per month: one row per match the page
+          listed as still to come when it was fetched. Past months' pages are
+          not fetched again, so a played match can stay listed; its result
+          appears in `matches` under the same ID. Staged by
+          `stg_bbc_sport__fixtures`.
         columns:
           - name: month
             data_type: varchar
@@ -520,7 +525,8 @@ sources:
             data_type: varchar
             description: "{{ doc('bbc_match_id') }}"
             data_tests:
-              - unique
+              # Not unique: a rescheduled match can be listed under its old
+              # month and its new one. Staging keeps one.
               - not_null
           - name: date_heading
             data_type: varchar

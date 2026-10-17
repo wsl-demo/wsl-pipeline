@@ -7,8 +7,6 @@
 -- Matches, players and teams are keyed on their Opta IDs. BBC's own IDs stay
 -- in staging; the team's Opta ID is looked up from the match's team list
 -- because the lineup tables only carry BBC's team slug.
---
--- `recency_rank` = 1 is a player's most recent squad selection.
 SELECT
     p.opta_match_id,
     p.opta_player_id,
@@ -23,11 +21,7 @@ SELECT
     p.is_starter,
     p.is_captain,
     (p.is_starter OR p.substituted_on_minute IS NOT NULL) AS has_appeared,
-    m.kicked_off_at,
-    ROW_NUMBER() OVER (
-        PARTITION BY p.opta_player_id
-        ORDER BY m.kicked_off_at DESC, p.opta_match_id DESC
-    ) AS recency_rank
+    m.kicked_off_at
 FROM {{ ref('stg_bbc_sport__match_players') }} AS p
 INNER JOIN {{ ref('stg_bbc_sport__matches') }} AS m
     ON p.opta_match_id = m.opta_match_id

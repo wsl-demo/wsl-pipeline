@@ -1,0 +1,44 @@
+models:
+  - name: match_actions
+    description: >
+      Goals, assists, cards and substitutions: one row per action per player,
+      and a substitution is two rows. Join to match_performances on match and
+      player for the player's team and time on the pitch.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: opta_match_id
+        data_type: varchar
+        description: "{{ doc('opta_match_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_player_id
+        data_type: varchar
+        description: "{{ doc('opta_player_id') }} The player the action belongs to; for an own goal, the player who scored it. An assist's player is matched by name to the squad, as BBC lists assists by name only."
+        data_tests:
+          - not_null
+      - name: opta_other_player_id
+        data_type: varchar
+        description: "For a substitution, the other player in the swap: the one who came on for a `substituted_off` row, the one who went off for a `substituted_on` row. Null for other actions."
+      - name: action_type
+        data_type: varchar
+        description: >
+          `goal`, `penalty_goal` (a scored penalty), `own_goal`, `assist`, `yellow_card`,
+          `second_yellow`, `red_card` (a straight red), `substituted_off` or
+          `substituted_on`. An own goal counts for the other team. A player sent
+          off for two yellows has a `yellow_card` row for the first and a
+          `second_yellow` row for the second.
+        data_tests:
+          - not_null
+      - name: regulation_minute
+        data_type: integer
+        description: "{{ doc('regulation_minute') }}"
+      - name: injury_minute
+        data_type: integer
+        description: "{{ doc('injury_minute') }}"
+      - name: match_minute
+        data_type: decimal(4,2)
+        description: "{{ doc('match_minute') }}"
+        data_tests:
+          - not_null

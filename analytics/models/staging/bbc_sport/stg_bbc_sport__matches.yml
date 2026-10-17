@@ -5,34 +5,6 @@ models:
       where, which teams, and the score.
 
       **Grain:** one row per match (`opta_match_id`, tested unique).
-
-      **What staging changes**
-      - IDs: URN prefixes removed; Opta's match ID derived from BBC's. BBC sends
-        Opta's tournament, stage and team IDs as their own columns, which are
-        renamed.
-      - Scores and attendance are cast from text.
-      - Kickoff is built from the date and time the page displays, read as UK
-        local time.
-      - Two text fields become flags (`is_regular_season`, `is_full_time`).
-
-      **Not carried over**
-      - Repeats of a staged column: `tournament_name` and
-        `tournamentDescriptionLabel` (= `tournament_name` here), `home_score` and
-        `away_score` (= the full-time scores), `venue_id` (= `bbc_venue_id`
-        without its `s-`), `stage_urn` (always empty).
-      - Other forms of the kickoff: `startDateTime` (unreliable; see
-        `kicked_off_at`), `time_accessibleTime` (screen-reader text) and
-        `time_timeCertainty` (true for every match).
-      - Team names: `home_fullName`, `home_shortName`, `away_fullName`,
-        `away_shortName` (in `stg_bbc_sport__match_teams`).
-      - Match state, which is the same for every finished match: `status`,
-        `period`, `periodLabel_accessible`, `live`, `home_scoreUnconfirmed`,
-        `away_scoreUnconfirmed`.
-      - Page furniture: `title`, `accessibleEventSummary`, `headerImage`,
-        `lastUpdatedString`, `seoTimestamps_*`, `mediaHeaderData_*`, `type`,
-        `sportDiscipline`, `venue_shortName`, `tournament_thingsGuid`, and
-        `groupedActions` (a JSON summary of the page's goals and assists).
-      - Providence metadata: `source_month`, `source_fetched_at`, `source_file`.
     columns:
       - name: bbc_match_id
         description: "{{ doc('bbc_match_id') }}"
@@ -140,3 +112,5 @@ models:
           - accepted_values:
               arguments:
                 values: ['home', 'away', 'draw']
+      - name: grouped_actions
+        description: "Actions the match page lists by team, in groups, as JSON text. Only the \"Assists\" group has appeared so far; its labels name each player and when, e.g. `M. Fowler (38', 45'+2)`."
