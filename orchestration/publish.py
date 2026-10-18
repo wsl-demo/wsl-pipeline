@@ -25,6 +25,7 @@ from dagster_duckdb import DuckDBResource
 SOURCE_SCHEMA = "main_marts"
 TABLES = [
     "fixtures",
+    "manager_appointments",
     "match_actions",
     "match_performances",
     "players",

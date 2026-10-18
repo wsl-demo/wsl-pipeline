@@ -1,0 +1,35 @@
+models:
+  - name: manager_appointments
+    description: >
+      One row per employment period of a manager in a club.
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: bbc_manager_id
+        data_type: varchar
+        description: "{{ doc('bbc_manager_id') }}"
+        data_tests:
+          - not_null
+      - name: manager_name
+        data_type: varchar
+        description: "{{ doc('manager_name') }}"
+      - name: opta_team_id
+        data_type: varchar
+        description: "{{ doc('opta_team_id') }}"
+      - name: first_match_opta_id
+        data_type: varchar
+        description: "{{ doc('opta_match_id') }}"
+      - name: first_match_kicked_off_at
+        data_type: timestamp
+        description: "{{ doc('kicked_off_at') }}"
+      - name: last_match_opta_id
+        data_type: varchar
+        description: "{{ doc('opta_match_id') }}"
+      - name: last_match_kicked_off_at
+        data_type: timestamp
+        description: "{{ doc('kicked_off_at') }}"
+      - name: is_current
+        data_type: boolean
+        description: >
+          True if the manager is currently employed by the club, false otherwise.

@@ -15,13 +15,12 @@ Opta's match ID, e.g. `1cd4kbemthwb8obzgso3i01lg`.
 {% enddocs %}
 
 {% docs opta_player_id %}
-Opta's player ID, e.g. `9t8eb24gwj56ucggp7x0n0ewa`: the key BBC Sport and
-wsl_football share.
+Opta's player ID, e.g. `9t8eb24gwj56ucggp7x0n0ewa`.
 {% enddocs %}
 
 {% docs opta_team_id %}
 Opta's team ID, which BBC calls the participant ID, e.g.
-`5rurqie3qt1qav9ir5mkqinn` (Arsenal).
+`5rurqie3qt1qav9ir5mkqinn`.
 {% enddocs %}
 
 {% docs opta_id_from_bbc_id %}
@@ -93,6 +92,15 @@ Goals the side scored, own goals included. Null for a match without a result.
 {% docs points %}
 League points the side earned: 3 for a win, 1 for a draw, 0 for a loss. Null
 for a match without a result.
+{% enddocs %}
+
+{% docs bbc_manager_id %}
+BBC's ID for the team's manager in the match, e.g. `btg39qwx8587tn3oieu0ajpbd`.
+Stable per manager; it looks like an Opta ID but is unconfirmed.
+{% enddocs %}
+
+{% docs manager_name %}
+The team manager's full name. Null for a match without a result.
 {% enddocs %}
 
 {#  Teams  #}

@@ -12,6 +12,10 @@
 -- happened, the fixture what was planned. Both name teams by Opta ID, and
 -- `fixtures_agree_with_results` checks that they name the same ones.
 --
+-- Managers come from `stg_bbc_sport__match_teams`, which exists only for played
+-- matches, so their IDs are null for a fixture without a result. Names are in
+-- `managers`.
+--
 -- Season comes from the `season_of` macro on the match's UK date. Other models
 -- call the same macro; none of them depend on this one for it.
 --
@@ -41,6 +45,22 @@ results AS (
         away_score_fulltime,
         winner_side
     FROM {{ ref('stg_bbc_sport__matches') }}
+),
+
+home_teams AS (
+    SELECT
+        opta_match_id,
+        bbc_manager_id
+    FROM {{ ref('stg_bbc_sport__match_teams') }}
+    WHERE source_side = 'homeTeam'
+),
+
+away_teams AS (
+    SELECT
+        opta_match_id,
+        bbc_manager_id
+    FROM {{ ref('stg_bbc_sport__match_teams') }}
+    WHERE source_side = 'awayTeam'
 ),
 
 joined AS (
@@ -74,6 +94,8 @@ SELECT
     joined.winner_side,
     joined.tournament_name,
     joined.venue_name,
+    home_teams.bbc_manager_id AS bbc_home_manager_id,
+    away_teams.bbc_manager_id AS bbc_away_manager_id,
     joined.home_score_fulltime,
     joined.away_score_fulltime,
     -- League points: 3 for a win, 1 for a draw, 0 for a loss. A football
@@ -91,5 +113,9 @@ SELECT
     joined.match_date,
     joined.kicked_off_at
 FROM joined
+LEFT JOIN home_teams
+    ON joined.opta_match_id = home_teams.opta_match_id
+LEFT JOIN away_teams
+    ON joined.opta_match_id = away_teams.opta_match_id
 LEFT JOIN {{ ref('int_fixtures_matchday_derived') }} AS matchdays
     ON joined.opta_match_id = matchdays.opta_match_id

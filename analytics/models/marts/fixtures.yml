@@ -65,6 +65,22 @@ models:
       - name: venue_name
         data_type: varchar
         description: "{{ doc('venue_name') }}"
+      - name: bbc_home_manager_id
+        data_type: varchar
+        description: "{{ doc('bbc_manager_id') }} The home team."
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('manager_appointments')
+                field: bbc_manager_id
+      - name: bbc_away_manager_id
+        data_type: varchar
+        description: "{{ doc('bbc_manager_id') }} The away team."
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('manager_appointments')
+                field: bbc_manager_id
       - name: home_score_fulltime
         data_type: integer
         description: "{{ doc('score_fulltime') }} The home team."
