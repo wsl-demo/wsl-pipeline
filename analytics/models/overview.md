@@ -10,12 +10,19 @@ means and why each layer exists.
 
 | Source | What it holds | Used for |
 | --- | --- | --- |
-| `bbc_sport` | BBC Sport's page for every played match (score, squads, goals, cards, statistics) and its fixtures pages listing matches to come | Everything about matches and who played in them |
+| `bbc_sport` | BBC Sport's listings of every match, scheduled, in play or finished, observed on every fetch; and each finished match's own page (squads, goals, cards, statistics, venue) | Everything about matches and who played in them |
 | `wsl_football` | The league's own site: the players in each club's current squad | Player biography only: nationality, birth date, height, weight |
 
 Both are written to CSV and loaded into the `raw` schema as text. Which team a
 player was in always comes from BBC Sport. `wsl_football` is a snapshot of
 current squads, so it knows nothing about players who have since left.
+
+BBC's data is a record of observations. Every listing fetch is kept, with the
+window of days it covered, so a fixture's state, date and kickoff are always
+"as BBC listed it at `last_listed_at`". Changes are kept as facts: a moved
+kickoff, or a match BBC stopped listing. A match page is fetched when the match
+finishes and again 14 days later, when BBC has stopped revising it. The scraper
+documents what BBC's data is in its `src/wsl/bbc/README.md`.
 
 ## One set of IDs
 
@@ -24,7 +31,7 @@ data provider. BBC writes them with an `s-` in front, so BBC's player
 `s-9t8eb24gwj56ucggp7x0n0ewa` is Opta's player `9t8eb24gwj56ucggp7x0n0ewa`.
 Teams are the exception: BBC's own team ID is a slug such as `arsenal-ladies`,
 and Opta's team ID appears only on the tables that list teams by side
-(`matches`, `match_teams`, `fixtures`).
+(`matches`, `match_teams`, `listing_events`).
 
 Column names say whose ID a column holds: `bbc_*_id` for BBC's form, `opta_*_id`
 for Opta's. Staging carries both; every model after staging joins on
@@ -35,14 +42,14 @@ for Opta's. Staging carries both; every model after staging joins on
 | Layer | Built as | What it does |
 | --- | --- | --- |
 | **Staging** (`stg_<source>__<table>`) | Views | One model per raw table, and no joins. Each renames columns, casts text to proper types, removes BBC's URN prefixes, derives Opta IDs, and turns coded text into flags. Each staging model's description lists its grain, what it changes and which raw columns it leaves behind. |
-| **Intermediate** (`int_*`) | Views | Joins and reshapes: fixtures joined to their results, squads joined to their matches, statistics pivoted from one row per statistic to one row per appearance, starts counted by position, assists matched to players by name, every timed action stacked into one shape, each player's time on the pitch derived, each start placed on a pitch every formation shares, each fixture placed on a matchday. Not published. |
+| **Intermediate** (`int_*`) | Views | Joins and reshapes: listing fetches joined to the matches they listed, each match's current listed state and its kickoff changes derived from those observations, squads joined to their matches, statistics pivoted from one row per statistic to one row per appearance, starts counted by position, assists matched to players by name, every timed action stacked into one shape, each player's time on the pitch derived, each start placed on a pitch every formation shares, each fixture placed on a matchday. Not published. |
 | **Marts** | Tables, with enforced contracts | The seven finished tables below. These are what the app receives. |
 
 ## The marts
 
 | Mart | One row per |
 | --- | --- |
-| `fixtures` | Match, with its result where one exists |
+| `fixtures` | Match, in the state BBC lists it now (scheduled, in play, finished or no longer listed), with its result once finished |
 | `match_performances` | Player per match they were named in the squad for, with their statistics, time on the pitch, and where a starter lined up |
 | `match_actions` | Goal, assist, card or substitution, per player involved |
 | `squad_members` | Player per team per season |

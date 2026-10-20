@@ -1,11 +1,12 @@
 models:
   - name: fixtures
     description: >
-      One row per fixture: every match BBC has listed, with its result where
-      one exists. A match keeps its opta_match_id from fixture to result.
-      Result columns are null while there is no result, which does not mean
-      the match is still to come: BBC's fixtures listings are not re-fetched
-      once their month has passed.
+      One row per fixture: every match BBC has listed from the 2023-24 season
+      on, in the state BBC lists it now (`scheduled`, `in_play`, `finished` or
+      `no_longer_listed`), as of `last_listed_at`. A match keeps its
+      opta_match_id through every state. Result columns are filled only once it
+      has finished. Nothing is inferred from the build's clock: a match last
+      listed as scheduled stays scheduled until a later fetch says otherwise.
     config:
       contract:
         enforced: true
@@ -13,6 +14,15 @@ models:
       - expression_is_true:
           arguments:
             expression: "not has_result or (home_points is not null and away_points is not null)"
+      - expression_is_true:
+          arguments:
+            expression: "has_result = (state = 'finished')"
+      - expression_is_true:
+          arguments:
+            expression: "(state = 'no_longer_listed') = (no_longer_listed_at is not null)"
+      - expression_is_true:
+          arguments:
+            expression: "not is_awarded or has_result"
     columns:
       - name: opta_match_id
         data_type: varchar
@@ -38,9 +48,17 @@ models:
               arguments:
                 to: ref('teams')
                 field: opta_team_id
+      - name: state
+        data_type: varchar
+        description: "{{ doc('fixture_state') }}"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['scheduled', 'in_play', 'finished', 'no_longer_listed']
       - name: has_result
         data_type: boolean
-        description: "True when BBC has a result for the match. False says only that no result has been collected, not that the match is still to come."
+        description: "True when the match has finished and BBC lists its result."
       - name: season
         data_type: varchar
         description: "{{ doc('season') }}"
@@ -55,10 +73,19 @@ models:
         description: >
           The fixture's place in the season's schedule, from 1; every team plays
           once per matchday, though not on the same day. Null when it cannot be
-          placed without guessing.
+          placed without guessing, and for a match BBC no longer lists.
       - name: winner_side
         data_type: varchar
         description: "{{ doc('winner_side') }}"
+      - name: is_awarded
+        data_type: boolean
+        description: "True for a finished match BBC records as awarded to one side rather than played to a score (`Match awarded to …`). Its listed score is 0-0; its points follow the winner."
+      - name: bbc_status
+        data_type: varchar
+        description: "{{ doc('bbc_status') }} As of `last_listed_at`."
+      - name: bbc_status_note
+        data_type: varchar
+        description: "{{ doc('bbc_status_note') }}"
       - name: tournament_name
         data_type: varchar
         description: "{{ doc('tournament_name') }}"
@@ -101,3 +128,22 @@ models:
       - name: kicked_off_at
         data_type: timestamp with time zone
         description: "{{ doc('kicked_off_at') }}"
+      - name: is_kickoff_time_tbc
+        data_type: boolean
+        description: "True while BBC lists the date but not yet the kickoff time."
+      - name: kickoff_changed_at
+        data_type: timestamp with time zone
+        description: "When a change to the listed date or kickoff time (including a TBC time being confirmed) was last observed. Null if none has been observed since every listing fetch began to be kept, on 18 October 2026."
+      - name: first_listed_at
+        data_type: timestamp with time zone
+        description: "{{ doc('first_listed_at') }}"
+        data_tests:
+          - not_null
+      - name: last_listed_at
+        data_type: timestamp with time zone
+        description: "{{ doc('last_listed_at') }}"
+        data_tests:
+          - not_null
+      - name: no_longer_listed_at
+        data_type: timestamp with time zone
+        description: "{{ doc('no_longer_listed_at') }}"

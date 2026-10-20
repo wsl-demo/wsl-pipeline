@@ -1,49 +1,50 @@
--- One row per fixture: every match BBC has listed, on its fixtures pages, its
--- results, or both, with its season and the league points each side earned.
+-- One row per fixture: every match BBC has listed, in whatever state BBC lists
+-- it now, with its season, its result once it has one, and the league points
+-- each side earned.
 --
--- The fixtures pages say only that a match was still to come when the page was
--- fetched, and past months' pages are not fetched again. So a fixture without a
--- result is not known to be in the future: it may have been played since, or
--- postponed. This model makes no claim either way; it records whether a result
--- exists (`has_result`) and leaves the result columns null when none does.
+-- The state is BBC's, from the match's latest observation in the listings
+-- (`int_matches_listing_state_derived`), and says as of when (`last_listed_at`):
 --
--- A fixture and its result share an opta_match_id, so they are full-outer
--- joined on it. Where both carry a value the result's wins: it records what
--- happened, the fixture what was planned. Both name teams by Opta ID, and
--- `fixtures_agree_with_results` checks that they name the same ones.
+-- - `scheduled`: still to come, at the date and kickoff BBC lists;
+-- - `in_play`: being played when last listed;
+-- - `finished`: BBC lists a result;
+-- - `no_longer_listed`: a later fetch covered its date and did not list it, so
+--   the date and kickoff are the last ones BBC listed. No reason is claimed.
 --
--- Managers come from `stg_bbc_sport__match_teams`, which exists only for played
--- matches, so their IDs are null for a fixture without a result. Names are in
--- `managers`.
+-- A status BBC has never sent before leaves `state` null and fails its test,
+-- rather than being mapped to a guess.
+--
+-- Result columns are filled only when finished. While a match is in play BBC's
+-- score is a running score and its winner the side leading, and neither is a
+-- result. An awarded match is finished with BBC's winner and no score to speak
+-- of (it is listed 0-0), so points follow `winner_side`, never the score.
+--
+-- The venue and the managers come from the match's own page, which exists only
+-- from the 2023-24 season and only once a match has finished. The marts start
+-- at that season (`first_season` in dbt_project.yml); the listings go back to
+-- 2020-21.
 --
 -- Season comes from the `season_of` macro on the match's UK date. Other models
--- call the same macro; none of them depend on this one for it.
---
--- The matchday is derived in `int_fixtures_matchday_derived` and is null for a
--- match that cannot be placed without guessing.
-WITH fixtures AS (
+-- call the same macro; none of them depend on this one for it. The matchday is
+-- derived in `int_fixtures_matchday_derived` and is null for a match that
+-- cannot be placed without guessing.
+WITH listed AS (
     SELECT
-        opta_match_id,
-        opta_home_team_id,
-        opta_away_team_id,
-        tournament_name,
-        match_date,
-        kicked_off_at
-    FROM {{ ref('stg_bbc_sport__fixtures') }}
+        *,
+        CASE
+            WHEN no_longer_listed_at IS NOT NULL THEN 'no_longer_listed'
+            WHEN bbc_status = 'PreEvent' THEN 'scheduled'
+            WHEN bbc_status = 'MidEvent' THEN 'in_play'
+            WHEN bbc_status = 'PostEvent' THEN 'finished'
+        END AS state,
+        {{ season_of('match_date') }} AS season
+    FROM {{ ref('int_matches_listing_state_derived') }}
 ),
 
-results AS (
+pages AS (
     SELECT
         opta_match_id,
-        opta_home_team_id,
-        opta_away_team_id,
-        tournament_name,
-        {{ uk_local_date('kicked_off_at') }} AS match_date,
-        kicked_off_at,
-        venue_name,
-        home_score_fulltime,
-        away_score_fulltime,
-        winner_side
+        venue_name
     FROM {{ ref('stg_bbc_sport__matches') }}
 ),
 
@@ -63,59 +64,74 @@ away_teams AS (
     WHERE source_side = 'awayTeam'
 ),
 
-joined AS (
+kickoff_changes AS (
     SELECT
-        COALESCE(results.opta_match_id, fixtures.opta_match_id) AS opta_match_id,
-        COALESCE(results.opta_home_team_id, fixtures.opta_home_team_id) AS opta_home_team_id,
-        COALESCE(results.opta_away_team_id, fixtures.opta_away_team_id) AS opta_away_team_id,
-        results.opta_match_id IS NOT NULL AS has_result,
-        COALESCE(results.tournament_name, fixtures.tournament_name) AS tournament_name,
-        -- Only results carry these.
-        results.venue_name,
-        results.home_score_fulltime,
-        results.away_score_fulltime,
-        results.winner_side,
-        -- A postponed match keeps its ID, so its fixture row can hold a date
-        -- it was never played on; the result's date is the one it happened.
-        COALESCE(results.match_date, fixtures.match_date) AS match_date,
-        COALESCE(results.kicked_off_at, fixtures.kicked_off_at) AS kicked_off_at
-    FROM fixtures
-    FULL OUTER JOIN results
-        ON fixtures.opta_match_id = results.opta_match_id
+        opta_match_id,
+        MAX(changed_at) AS kickoff_changed_at
+    FROM {{ ref('int_matches_kickoff_changes_derived') }}
+    GROUP BY opta_match_id
+),
+
+results AS (
+    SELECT
+        opta_match_id,
+        state,
+        state = 'finished' AS has_result,
+        CASE WHEN state = 'finished' THEN winner_side END AS winner_side,
+        CASE WHEN state = 'finished' THEN home_score_fulltime END AS home_score_fulltime,
+        CASE WHEN state = 'finished' THEN away_score_fulltime END AS away_score_fulltime,
+        state = 'finished' AND bbc_status_note LIKE 'Match awarded to %' AS is_awarded
+    FROM listed
 )
 
 SELECT
-    joined.opta_match_id,
-    joined.opta_home_team_id,
-    joined.opta_away_team_id,
-    joined.has_result,
-    {{ season_of('joined.match_date') }} AS season,
+    listed.opta_match_id,
+    listed.opta_home_team_id,
+    listed.opta_away_team_id,
+    results.state,
+    results.has_result,
+    listed.season,
     matchdays.matchday,
-    joined.winner_side,
-    joined.tournament_name,
-    joined.venue_name,
+    results.winner_side,
+    results.is_awarded,
+    listed.bbc_status,
+    listed.bbc_status_note,
+    listed.tournament_name,
+    pages.venue_name,
     home_teams.bbc_manager_id AS bbc_home_manager_id,
     away_teams.bbc_manager_id AS bbc_away_manager_id,
-    joined.home_score_fulltime,
-    joined.away_score_fulltime,
+    results.home_score_fulltime,
+    results.away_score_fulltime,
     -- League points: 3 for a win, 1 for a draw, 0 for a loss. A football
     -- scoring rule rather than a cleanup of the source.
-    CASE joined.winner_side
+    CASE results.winner_side
         WHEN 'home' THEN 3
         WHEN 'away' THEN 0
         WHEN 'draw' THEN 1
     END AS home_points,
-    CASE joined.winner_side
+    CASE results.winner_side
         WHEN 'home' THEN 0
         WHEN 'away' THEN 3
         WHEN 'draw' THEN 1
     END AS away_points,
-    joined.match_date,
-    joined.kicked_off_at
-FROM joined
+    listed.match_date,
+    listed.kicked_off_at,
+    listed.is_kickoff_time_tbc,
+    kickoff_changes.kickoff_changed_at,
+    listed.first_listed_at,
+    listed.last_listed_at,
+    listed.no_longer_listed_at
+FROM listed
+INNER JOIN results
+    ON listed.opta_match_id = results.opta_match_id
+LEFT JOIN pages
+    ON listed.opta_match_id = pages.opta_match_id
 LEFT JOIN home_teams
-    ON joined.opta_match_id = home_teams.opta_match_id
+    ON listed.opta_match_id = home_teams.opta_match_id
 LEFT JOIN away_teams
-    ON joined.opta_match_id = away_teams.opta_match_id
+    ON listed.opta_match_id = away_teams.opta_match_id
+LEFT JOIN kickoff_changes
+    ON listed.opta_match_id = kickoff_changes.opta_match_id
 LEFT JOIN {{ ref('int_fixtures_matchday_derived') }} AS matchdays
-    ON joined.opta_match_id = matchdays.opta_match_id
+    ON listed.opta_match_id = matchdays.opta_match_id
+WHERE listed.season >= '{{ var("first_season") }}'

@@ -50,28 +50,27 @@ unit_tests:
         - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "arsenal-ladies", bbc_player_id: "s-p2", opta_player_id: "p2", is_starter: true, position: "Defender", substituted_off_minute: 47, substituted_off_regulation_time: 45, substituted_off_injury_time: 2, substituted_off_time_seconds: 2770}
         - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_team_id: "arsenal-ladies", bbc_player_id: "urn:other:player:s-p3", opta_player_id: null, is_starter: false, position: null, substituted_off_minute: null, substituted_off_regulation_time: null, substituted_off_injury_time: null}
 
-  - name: fixtures_dates_and_kickoff
+  - name: listing_events_kickoff_and_state
     description: >
-      The date is rebuilt from `month` plus the day number (ordinal suffixes of
-      every kind), kickoff is read as UK local time across the daylight-saving
-      change, TBC kickoffs become null rather than failing, and the Opta match
-      ID is the event ID without its `s-`.
-    model: stg_bbc_sport__fixtures
+      Kickoff is BBC's UTC instant when the time is confirmed and null while it
+      is TBC (when BBC sends a bare date), the date is BBC's UK date even when
+      the UTC instant falls on the day before, team and tournament URNs lose
+      their prefix, and the state is passed through as sent: an in-play row
+      keeps its running score and current leader, flagged by its status.
+    model: stg_bbc_sport__listing_events
     given:
-      - input: source('bbc_sport', 'fixtures')
+      - input: source('bbc_sport', 'listing_events')
         rows:
-          # British Summer Time: 14:00 local is 13:00 UTC
-          - {month: "2026-10", event_id: "s-f1", date_heading: "Sunday 18th October", kickoff_time: "14:00", home_participant_id: "h", away_participant_id: "a"}
-          # winter: local equals UTC; and the 1st, 2nd, 3rd, 22nd suffixes
-          - {month: "2026-11", event_id: "s-f2", date_heading: "Sunday 1st November", kickoff_time: "12:00", home_participant_id: "h", away_participant_id: "a"}
-          - {month: "2027-01", event_id: "s-f3", date_heading: "Saturday 2nd January", kickoff_time: "12:30", home_participant_id: "h", away_participant_id: "a"}
-          - {month: "2027-05", event_id: "s-f4", date_heading: "Sunday 3rd May", kickoff_time: "13:00", home_participant_id: "h", away_participant_id: "a"}
-          # kickoff not yet confirmed
-          - {month: "2027-05", event_id: "s-f5", date_heading: "Saturday 22nd May", kickoff_time: "TBC", home_participant_id: "h", away_participant_id: "a"}
+          - {source_file: "listings/2026-10/a.html", id: "s-f1", status: "PreEvent", statusComment_value: "Scheduled", startDateTime: "2026-10-24T11:45:00Z", date_isoDate: "2026-10-24", time_timeCertainty: "true", home_id: "h", away_id: "a", home_urn: "urn:bbc:sportsdata:football:team:tottenham-hotspur-women", tournament_urn: "urn:bbc:sportsdata:football:tournament:womens-super-league"}
+          # kickoff not yet confirmed: a bare date
+          - {source_file: "listings/2027-05/b.html", id: "s-f2", status: "PreEvent", statusComment_value: "Scheduled", startDateTime: "2027-05-22", date_isoDate: "2027-05-22", time_timeCertainty: "false", home_id: "h", away_id: "a"}
+          # 23:30 UTC on 31 July is 1 August in the UK
+          - {source_file: "listings/2026-08/c.html", id: "s-f3", status: "PreEvent", statusComment_value: "Scheduled", startDateTime: "2026-07-31T23:30:00Z", date_isoDate: "2026-08-01", time_timeCertainty: "true", home_id: "h", away_id: "a"}
+          # in play: the running score and the side leading, as sent
+          - {source_file: "listings/2026-10/d.html", id: "s-m1", status: "MidEvent", statusComment_value: "72'", startDateTime: "2026-10-18T13:00:00Z", date_isoDate: "2026-10-18", time_timeCertainty: "true", home_id: "h", away_id: "a", home_score: "1", away_score: "1", home_runningScores_fulltime: "1", away_runningScores_fulltime: "1", winner: "draw", tipoTopicId: "cqj9kegrrp8gt"}
     expect:
       rows:
-        - {bbc_match_id: "s-f1", opta_match_id: "f1", match_date: "2026-10-18", is_kickoff_time_tbc: false, kicked_off_at: "2026-10-18 13:00:00+00:00"}
-        - {bbc_match_id: "s-f2", opta_match_id: "f2", match_date: "2026-11-01", is_kickoff_time_tbc: false, kicked_off_at: "2026-11-01 12:00:00+00:00"}
-        - {bbc_match_id: "s-f3", opta_match_id: "f3", match_date: "2027-01-02", is_kickoff_time_tbc: false, kicked_off_at: "2027-01-02 12:30:00+00:00"}
-        - {bbc_match_id: "s-f4", opta_match_id: "f4", match_date: "2027-05-03", is_kickoff_time_tbc: false, kicked_off_at: "2027-05-03 12:00:00+00:00"}
-        - {bbc_match_id: "s-f5", opta_match_id: "f5", match_date: "2027-05-22", is_kickoff_time_tbc: true, kicked_off_at: null}
+        - {bbc_match_id: "s-f1", opta_match_id: "f1", bbc_status: "PreEvent", match_date: "2026-10-24", is_kickoff_time_tbc: false, kicked_off_at: "2026-10-24 11:45:00+00:00", bbc_home_team_id: "tottenham-hotspur-women", bbc_tournament_id: "womens-super-league", winner_side: null, bbc_match_page_id: null}
+        - {bbc_match_id: "s-f2", opta_match_id: "f2", bbc_status: "PreEvent", match_date: "2027-05-22", is_kickoff_time_tbc: true, kicked_off_at: null, bbc_home_team_id: null, bbc_tournament_id: null, winner_side: null, bbc_match_page_id: null}
+        - {bbc_match_id: "s-f3", opta_match_id: "f3", bbc_status: "PreEvent", match_date: "2026-08-01", is_kickoff_time_tbc: false, kicked_off_at: "2026-07-31 23:30:00+00:00", bbc_home_team_id: null, bbc_tournament_id: null, winner_side: null, bbc_match_page_id: null}
+        - {bbc_match_id: "s-m1", opta_match_id: "m1", bbc_status: "MidEvent", match_date: "2026-10-18", is_kickoff_time_tbc: false, kicked_off_at: "2026-10-18 13:00:00+00:00", bbc_home_team_id: null, bbc_tournament_id: null, winner_side: "draw", bbc_match_page_id: "cqj9kegrrp8gt"}

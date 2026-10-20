@@ -21,7 +21,7 @@ target = Path("target")
 runs = sorted(target.rglob("run_results.json"), key=lambda p: p.stat().st_mtime)
 if not runs:
     raise SystemExit(
-        "No run_results.json under target/ -- run `just build` or `just setup` first."
+        "No run_results.json under target/ -- run `just build` or `just publish` first."
     )
 
 results = json.loads(runs[-1].read_text())["results"]

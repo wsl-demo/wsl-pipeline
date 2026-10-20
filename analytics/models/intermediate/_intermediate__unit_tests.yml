@@ -63,3 +63,35 @@ unit_tests:
         - {opta_player_id: "a2", opta_team_id: "t-away", season: "2026-2027", row_width: 1, outfield_line_count: 3, start_depth: 0.333, start_width: 0.500}
         - {opta_player_id: "a3", opta_team_id: "t-away", season: "2026-2027", row_width: 1, outfield_line_count: 3, start_depth: 0.667, start_width: 0.500}
         - {opta_player_id: "a4", opta_team_id: "t-away", season: "2026-2027", row_width: 1, outfield_line_count: 3, start_depth: 1.000, start_width: 0.500}
+
+  - name: listing_state_latest_and_no_longer_listed
+    description: >
+      A match's state is its latest observation, and BBC has stopped listing it
+      only when a fetch made after that observation covered its date without
+      it. A match still listed is not flagged, nor is one that moved: its latest
+      observation gives the new date, which no later fetch has covered.
+    model: int_matches_listing_state_derived
+    given:
+      - input: ref('int_listing_events_joined_to_fetches')
+        rows:
+          # still listed: seen on every fetch of its window
+          - {listing_fetch_id: "f1", observed_at: "2026-10-16 09:00:00+00:00", bbc_match_id: "s-a", opta_match_id: "a", bbc_status: "PreEvent", match_date: "2026-10-24"}
+          - {listing_fetch_id: "f2", observed_at: "2026-10-17 09:00:00+00:00", bbc_match_id: "s-a", opta_match_id: "a", bbc_status: "PreEvent", match_date: "2026-10-24"}
+          - {listing_fetch_id: "f3", observed_at: "2026-10-18 09:00:00+00:00", bbc_match_id: "s-a", opta_match_id: "a", bbc_status: "PreEvent", match_date: "2026-10-24"}
+          # dropped: missing from f3, which covered 25 October
+          - {listing_fetch_id: "f1", observed_at: "2026-10-16 09:00:00+00:00", bbc_match_id: "s-b", opta_match_id: "b", bbc_status: "PreEvent", match_date: "2026-10-25"}
+          - {listing_fetch_id: "f2", observed_at: "2026-10-17 09:00:00+00:00", bbc_match_id: "s-b", opta_match_id: "b", bbc_status: "PreEvent", match_date: "2026-10-25"}
+          # moved: missing from f3's window, but listed on 5 November by f4
+          - {listing_fetch_id: "f1", observed_at: "2026-10-16 09:00:00+00:00", bbc_match_id: "s-c", opta_match_id: "c", bbc_status: "PreEvent", match_date: "2026-10-26"}
+          - {listing_fetch_id: "f4", observed_at: "2026-10-18 09:00:05+00:00", bbc_match_id: "s-c", opta_match_id: "c", bbc_status: "PreEvent", match_date: "2026-11-05"}
+      - input: ref('stg_bbc_sport__listing_fetches')
+        rows:
+          - {listing_fetch_id: "f1", fetched_at: "2026-10-16 09:00:00+00:00", window_start_date: "2026-10-17", window_end_date: "2026-10-31"}
+          - {listing_fetch_id: "f2", fetched_at: "2026-10-17 09:00:00+00:00", window_start_date: "2026-10-18", window_end_date: "2026-10-31"}
+          - {listing_fetch_id: "f3", fetched_at: "2026-10-18 09:00:00+00:00", window_start_date: "2026-10-19", window_end_date: "2026-10-31"}
+          - {listing_fetch_id: "f4", fetched_at: "2026-10-18 09:00:05+00:00", window_start_date: "2026-11-01", window_end_date: "2026-11-30"}
+    expect:
+      rows:
+        - {bbc_match_id: "s-a", match_date: "2026-10-24", first_listed_at: "2026-10-16 09:00:00+00:00", last_listed_at: "2026-10-18 09:00:00+00:00", no_longer_listed_at: null}
+        - {bbc_match_id: "s-b", match_date: "2026-10-25", first_listed_at: "2026-10-16 09:00:00+00:00", last_listed_at: "2026-10-17 09:00:00+00:00", no_longer_listed_at: "2026-10-18 09:00:00+00:00"}
+        - {bbc_match_id: "s-c", match_date: "2026-11-05", first_listed_at: "2026-10-16 09:00:00+00:00", last_listed_at: "2026-10-18 09:00:05+00:00", no_longer_listed_at: null}

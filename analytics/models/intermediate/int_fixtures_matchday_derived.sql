@@ -16,48 +16,22 @@
 -- 3. A match that still has no single fit gets no matchday. That is a decision
 --    about ambiguity, not a claim that the match was postponed.
 --
--- Matches come from the same fixtures and results as the `fixtures` mart: a
--- match keeps its Opta ID from fixture to result, and the result's date wins.
--- The join is repeated here rather than read from the mart so that the mart can
--- take the matchday from this model.
+-- Matches come from BBC's listings, as the `fixtures` mart's do: each match
+-- once, at the date BBC lists it now, which for a played match is the day it
+-- was played. A match BBC no longer lists has no date to place it by, so it is
+-- left out and gets no matchday. The mart reads this model, not the other way
+-- round, so that it can take the matchday from here.
 {% set fill_passes = 3 %}
-WITH fixtures AS (
+WITH seasonal_matches AS (
     SELECT
         opta_match_id,
         opta_home_team_id,
         opta_away_team_id,
         match_date,
-        kicked_off_at
-    FROM {{ ref('stg_bbc_sport__fixtures') }}
-),
-
-results AS (
-    SELECT
-        opta_match_id,
-        opta_home_team_id,
-        opta_away_team_id,
-        {{ uk_local_date('kicked_off_at') }} AS match_date,
-        kicked_off_at
-    FROM {{ ref('stg_bbc_sport__matches') }}
-),
-
-matches AS (
-    SELECT
-        COALESCE(results.opta_match_id, fixtures.opta_match_id) AS opta_match_id,
-        COALESCE(results.opta_home_team_id, fixtures.opta_home_team_id) AS opta_home_team_id,
-        COALESCE(results.opta_away_team_id, fixtures.opta_away_team_id) AS opta_away_team_id,
-        COALESCE(results.match_date, fixtures.match_date) AS match_date,
-        COALESCE(results.kicked_off_at, fixtures.kicked_off_at) AS kicked_off_at
-    FROM fixtures
-    FULL OUTER JOIN results
-        ON fixtures.opta_match_id = results.opta_match_id
-),
-
-seasonal_matches AS (
-    SELECT
-        *,
+        kicked_off_at,
         {{ season_of('match_date') }} AS season
-    FROM matches
+    FROM {{ ref('int_matches_listing_state_derived') }}
+    WHERE no_longer_listed_at IS NULL
 ),
 
 -- Each team meets every other twice, so a season has 2 * (teams - 1) matchdays.

@@ -4,7 +4,8 @@
 -- value here, in every staging table that derives one.
 {% set checks = [
     ('stg_bbc_sport__matches', 'bbc_match_id'),
-    ('stg_bbc_sport__fixtures', 'bbc_match_id'),
+    ('stg_bbc_sport__listing_events', 'bbc_match_id'),
+    ('stg_bbc_sport__match_pages', 'bbc_match_id'),
     ('stg_bbc_sport__match_officials', 'bbc_match_id'),
     ('stg_bbc_sport__match_teams', 'bbc_match_id'),
     ('stg_bbc_sport__match_players', 'bbc_match_id'),

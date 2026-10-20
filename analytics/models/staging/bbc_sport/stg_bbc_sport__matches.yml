@@ -56,7 +56,7 @@ models:
       - name: is_regular_season
         description: "True for a match in Opta's \"Regular Season\" stage, which every match so far is."
       - name: is_full_time
-        description: "True when BBC labels the score full time (`FT`), which it does for every match so far: its results pages list only finished matches."
+        description: "True when BBC labels the score full time (`FT`), which it does for every match so far: a page is fetched only once its listing says the match has finished."
       - name: bbc_home_team_id
         description: "{{ doc('bbc_team_id') }} The home team."
         data_tests:

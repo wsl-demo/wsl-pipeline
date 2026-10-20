@@ -1,0 +1,58 @@
+models:
+  - name: int_listing_events_joined_to_fetches
+    description: |
+      Every observation of a match in BBC's listings: what one fetch of a
+      listing page said about one match. The raw tables store each distinct
+      listing page once, with a log of every fetch that saw it; this rejoins
+      the two, so a match listed unchanged on ten fetches has ten rows.
+
+      **Grain:** one row per match per fetch (`bbc_match_id`,
+      `listing_fetch_id`).
+    data_tests:
+      - unique:
+          column_name: "bbc_match_id || '|' || listing_fetch_id"
+    columns:
+      - name: listing_fetch_id
+        description: "The fetch that made the observation."
+        data_tests:
+          - not_null
+      - name: crawl_run_id
+        description: "The crawl run, as the time it started; null for pages migrated from before the fetch log."
+      - name: observed_at
+        description: "When the fetch was made."
+        data_tests:
+          - not_null
+      - name: window_start_date
+        description: "First day of the fetch's window."
+      - name: window_end_date
+        description: "Last day of the fetch's window."
+      - name: bbc_match_id
+        description: "{{ doc('bbc_match_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+      - name: bbc_status
+        description: "{{ doc('bbc_status') }}"
+      - name: bbc_status_note
+        description: "{{ doc('bbc_status_note') }}"
+      - name: match_date
+        description: "The match's UK date, as listed then."
+      - name: is_kickoff_time_tbc
+        description: "True while BBC listed no kickoff time."
+      - name: kicked_off_at
+        description: "The kickoff as listed then; null while TBC."
+      - name: opta_home_team_id
+        description: "{{ doc('opta_team_id') }} The home team."
+      - name: opta_away_team_id
+        description: "{{ doc('opta_team_id') }} The away team."
+      - name: home_score_fulltime
+        description: "The home side's score as listed then: final once `PostEvent`, running while `MidEvent`."
+      - name: away_score_fulltime
+        description: "The away side's score as listed then: final once `PostEvent`, running while `MidEvent`."
+      - name: winner_side
+        description: "As listed then: the result once `PostEvent`, the side leading while `MidEvent`."
+      - name: bbc_match_page_id
+        description: "{{ doc('bbc_match_page_id') }}"
+      - name: tournament_name
+        description: "{{ doc('tournament_name') }}"

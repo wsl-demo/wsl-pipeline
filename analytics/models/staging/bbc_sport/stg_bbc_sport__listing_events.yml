@@ -1,0 +1,79 @@
+models:
+  - name: stg_bbc_sport__listing_events
+    description: |
+      Matches as BBC's listing pages listed them (raw `bbc_sport.listing_events`):
+      scheduled, in play or finished, with or without a match page, including
+      the 2020-21 to 2022-23 seasons, which have no pages. Every value is the
+      match's state when listed; `bbc_status` says which state that was.
+
+      **Grain:** one row per match per stored listing page (`listing_file`,
+      `bbc_match_id`). Join `stg_bbc_sport__listing_fetches` on
+      `listing_file` for one row per match per fetch.
+    data_tests:
+      - unique:
+          column_name: "listing_file || '|' || bbc_match_id"
+    columns:
+      - name: listing_file
+        description: "The stored listing page that listed the match."
+        data_tests:
+          - not_null
+      - name: bbc_match_id
+        description: "{{ doc('bbc_match_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
+        data_tests:
+          - not_null
+      - name: bbc_status
+        description: "{{ doc('bbc_status') }}"
+        data_tests:
+          - not_null
+      - name: bbc_status_note
+        description: "{{ doc('bbc_status_note') }}"
+      - name: match_date
+        description: "The match's date in the UK, as listed."
+        data_tests:
+          - not_null
+      - name: is_kickoff_time_tbc
+        description: "True while BBC lists the date but no kickoff time (TBC)."
+      - name: kicked_off_at
+        description: "The kickoff as listed. Null while the time is TBC."
+      - name: opta_home_team_id
+        description: "{{ doc('opta_team_id') }} The home team."
+        data_tests:
+          - not_null
+      - name: opta_away_team_id
+        description: "{{ doc('opta_team_id') }} The away team."
+        data_tests:
+          - not_null
+      - name: bbc_home_team_id
+        description: "{{ doc('bbc_team_id') }} The home team."
+      - name: bbc_away_team_id
+        description: "{{ doc('bbc_team_id') }} The away team."
+      - name: home_score
+        description: "The home side's score when listed: the running score while in play, null for a match still to come."
+      - name: away_score
+        description: "The away side's score when listed: the running score while in play, null for a match still to come."
+      - name: home_score_halftime
+        description: "{{ doc('score_halftime') }} The home team."
+      - name: away_score_halftime
+        description: "{{ doc('score_halftime') }} The away team."
+      - name: home_score_fulltime
+        description: "The home side's score at full time once `PostEvent`; while in play, the running score."
+      - name: away_score_fulltime
+        description: "The away side's score at full time once `PostEvent`; while in play, the running score."
+      - name: winner_side
+        description: "`home`, `away` or `draw`: once `PostEvent`, the result, which for an awarded match is not the score's; while `MidEvent`, the side leading."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['home', 'away', 'draw']
+      - name: bbc_match_page_id
+        description: "{{ doc('bbc_match_page_id') }}"
+      - name: tournament_name
+        description: "{{ doc('tournament_name') }}"
+      - name: bbc_tournament_id
+        description: "BBC's tournament ID: a slug, `womens-super-league`."
+      - name: opta_tournament_id
+        description: "{{ doc('opta_tournament_id') }}"

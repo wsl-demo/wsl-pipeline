@@ -36,13 +36,53 @@ Season label, e.g. "2026-2027". A season runs from 1 July to 30 June; the
 {% enddocs %}
 
 {% docs match_date %}
-The day of the match in the UK. Once there is a result, the day it was
-played; before that, the day BBC listed it for.
+The day of the match in the UK, as BBC lists it now: once played, the day it was
+played; before that, the day it is listed for, which can still move.
 {% enddocs %}
 
 {% docs kicked_off_at %}
-Kickoff, as an absolute timestamp, in UK local time. Null
-for a fixture without a result whose time BBC listed as TBC.
+The kickoff BBC lists, as an absolute timestamp: for a played match, when it
+kicked off (the substitution clock agrees within minutes); for one still to
+come, when it is due to. Null while BBC lists the time as TBC.
+{% enddocs %}
+
+{#  BBC's listings: the state of a match, and when it was observed  #}
+
+{% docs bbc_status %}
+BBC's lifecycle state for the match, as sent: `PreEvent` (scheduled),
+`MidEvent` (being played) or `PostEvent` (finished). Postponed, abandoned or
+cancelled matches have never been observed, so how BBC shows them is unknown;
+the staging source tests these three values so that a new one fails the build.
+{% enddocs %}
+
+{% docs bbc_status_note %}
+BBC's state in words: `Scheduled`; the match clock while being played (`57'`,
+`HT`, `90'+1`, which lags the real clock); `FT`; or a note such as
+`Match awarded to Tottenham Hotspur`.
+{% enddocs %}
+
+{% docs fixture_state %}
+Where the match is in its life, as BBC last listed it: `scheduled`, `in_play`,
+`finished`, or `no_longer_listed` when a later listing that covered its date did
+not include it. That last is how a postponement first shows, but no reason is
+claimed. Always as of `last_listed_at`, never inferred from the clock.
+{% enddocs %}
+
+{% docs first_listed_at %}
+When the match was first observed in BBC's listings, not when BBC first
+listed it. Every listing fetch has been kept since 18 October 2026; before that
+only the last copy of each page survives (from 15 October for past seasons,
+from 18 October for this one), so no match was first observed any earlier.
+{% enddocs %}
+
+{% docs last_listed_at %}
+When the match was last observed in BBC's listings: the moment its state, date
+and score are true as of.
+{% enddocs %}
+
+{% docs no_longer_listed_at %}
+When a listing that covered the match's last listed date was first fetched
+without it. Null while BBC still lists the match.
 {% enddocs %}
 
 {#
@@ -76,13 +116,16 @@ Competition name, e.g. "Women's Super League".
 {% enddocs %}
 
 {% docs venue_name %}
-Stadium name as BBC showed it for the match, e.g. "Joie Stadium". One venue can
-appear under more than one name over time. Null for a match without a result,
-since fixtures listings do not carry it.
+Stadium name from the match's BBC page, e.g. "Joie Stadium". It is the name BBC
+gave the venue when the page was last fetched, not necessarily when the match
+was played: BBC renames venues on old pages too (seven 2024-25 Crystal Palace
+home matches changed name in October 2026). Null for a match without a page,
+since listings do not carry it.
 {% enddocs %}
 
 {% docs winner_side %}
-`home`, `away` or `draw`. Null for a match without a result.
+`home`, `away` or `draw`. Null for a match without a result. For an awarded
+match, the side it was awarded to.
 {% enddocs %}
 
 {% docs score_fulltime %}

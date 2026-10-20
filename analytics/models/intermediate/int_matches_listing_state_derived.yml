@@ -1,0 +1,64 @@
+models:
+  - name: int_matches_listing_state_derived
+    description: |
+      Each match as BBC lists it now: the state, date and score of its latest
+      observation, when BBC first and last listed it, and when BBC was first
+      seen no longer listing it.
+
+      A listing names every match dated within its window, so a later fetch
+      that covered the match's latest listed date without listing it is
+      evidence that BBC no longer lists it there. `no_longer_listed_at` is the
+      first such fetch. It is how a postponement first shows, but claims no
+      reason.
+
+      Built only from observations, never from the build's clock: a match last
+      seen scheduled stays scheduled, as of `last_listed_at`, until a later
+      fetch says otherwise.
+
+      **Grain:** one row per match BBC has listed (`bbc_match_id`), all
+      seasons.
+    columns:
+      - name: bbc_match_id
+        description: "{{ doc('bbc_match_id') }}"
+        data_tests:
+          - unique
+          - not_null
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+        data_tests:
+          - unique
+          - not_null
+      - name: opta_home_team_id
+        description: "{{ doc('opta_team_id') }} The home team."
+      - name: opta_away_team_id
+        description: "{{ doc('opta_team_id') }} The away team."
+      - name: bbc_status
+        description: "{{ doc('bbc_status') }} As of `last_listed_at`."
+      - name: bbc_status_note
+        description: "{{ doc('bbc_status_note') }}"
+      - name: match_date
+        description: "{{ doc('match_date') }}"
+      - name: is_kickoff_time_tbc
+        description: "True while BBC lists no kickoff time."
+      - name: kicked_off_at
+        description: "{{ doc('kicked_off_at') }}"
+      - name: home_score_fulltime
+        description: "As last listed: final once `PostEvent`, running while `MidEvent`."
+      - name: away_score_fulltime
+        description: "As last listed: final once `PostEvent`, running while `MidEvent`."
+      - name: winner_side
+        description: "As last listed: the result once `PostEvent`, the side leading while `MidEvent`."
+      - name: bbc_match_page_id
+        description: "{{ doc('bbc_match_page_id') }}"
+      - name: tournament_name
+        description: "{{ doc('tournament_name') }}"
+      - name: first_listed_at
+        description: "{{ doc('first_listed_at') }}"
+        data_tests:
+          - not_null
+      - name: last_listed_at
+        description: "{{ doc('last_listed_at') }}"
+        data_tests:
+          - not_null
+      - name: no_longer_listed_at
+        description: "{{ doc('no_longer_listed_at') }}"

@@ -17,7 +17,7 @@ models:
         description: Number of distinct teams that have a match in the season.
       - name: matches_total
         data_type: integer
-        description: Fixtures listed, with or without a result.
+        description: Fixtures BBC has listed in the season, in any state, including any it no longer lists.
       - name: matches_played
         data_type: integer
         description: Matches with a result.

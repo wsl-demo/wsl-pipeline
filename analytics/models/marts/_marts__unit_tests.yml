@@ -1,24 +1,34 @@
 unit_tests:
-  - name: fixtures_season_result_and_points
+  - name: fixtures_state_result_and_points
     description: >
-      Season follows the UK date of the match with a 1 July boundary (a kickoff
-      at 23:30 UTC on 30 June is already 1 July in London), points follow the
-      winner, a fixture without a result has no points, and a fixture with a
-      result appears once, on the date the result gives even when the fixture
-      listed another. The matchday is taken from the derived one, and is null
-      where none was derived. Each side's manager ID comes from the match's team
-      rows by side, and is null for a fixture without a result.
+      The state follows BBC's latest listed status, and a later listing that
+      left the match out makes it `no_longer_listed` whatever its status was.
+      Result columns are filled only once finished, so an in-play match has no
+      winner, score or points even though BBC sends a running score and a
+      leader. An awarded match is finished with its points from the winner.
+      Season follows the UK date with a 1 July boundary, and seasons before
+      `first_season` are left out. Venue and managers come from the match's
+      page, the matchday from the derived one, and `kickoff_changed_at` is the
+      latest observed change.
     model: fixtures
     given:
+      - input: ref('int_matches_listing_state_derived')
+        rows:
+          - {opta_match_id: "m1", bbc_status: "PostEvent", bbc_status_note: "FT", match_date: "2026-05-16", opta_home_team_id: "a", opta_away_team_id: "b", home_score_fulltime: 2, away_score_fulltime: 1, winner_side: "home"}
+          # 1 July starts the next season
+          - {opta_match_id: "m2", bbc_status: "PostEvent", bbc_status_note: "FT", match_date: "2026-07-01", opta_home_team_id: "a", opta_away_team_id: "b", home_score_fulltime: 1, away_score_fulltime: 1, winner_side: "draw"}
+          - {opta_match_id: "m3", bbc_status: "MidEvent", bbc_status_note: "72'", match_date: "2026-10-18", opta_home_team_id: "a", opta_away_team_id: "b", home_score_fulltime: 0, away_score_fulltime: 1, winner_side: "away"}
+          - {opta_match_id: "f1", bbc_status: "PreEvent", bbc_status_note: "Scheduled", match_date: "2027-05-22", is_kickoff_time_tbc: true, opta_home_team_id: "a", opta_away_team_id: "b"}
+          - {opta_match_id: "w1", bbc_status: "PostEvent", bbc_status_note: "Match awarded to Tottenham Hotspur", match_date: "2026-11-08", opta_home_team_id: "a", opta_away_team_id: "b", home_score_fulltime: 0, away_score_fulltime: 0, winner_side: "home"}
+          - {opta_match_id: "u1", bbc_status: "PreEvent", bbc_status_note: "Scheduled", match_date: "2026-10-24", opta_home_team_id: "a", opta_away_team_id: "b", no_longer_listed_at: "2026-10-25 09:00:00+00:00"}
+          - {opta_match_id: "old", bbc_status: "PostEvent", bbc_status_note: "FT", match_date: "2022-01-15", opta_home_team_id: "a", opta_away_team_id: "b", home_score_fulltime: 1, away_score_fulltime: 0, winner_side: "home"}
       - input: ref('stg_bbc_sport__matches')
         rows:
-          - {opta_match_id: "m1", kicked_off_at: "2026-05-16 14:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b", winner_side: "home"}
-          - {opta_match_id: "m2", kicked_off_at: "2026-06-30 23:30:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b", winner_side: "draw"}
-          - {opta_match_id: "m3", kicked_off_at: "2027-01-15 12:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b", winner_side: "away"}
-      - input: ref('stg_bbc_sport__fixtures')
+          - {opta_match_id: "m1", venue_name: "Emirates Stadium"}
+      - input: ref('int_matches_kickoff_changes_derived')
         rows:
-          - {opta_match_id: "m1", match_date: "2026-05-10", kicked_off_at: "2026-05-10 14:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b"}
-          - {opta_match_id: "f1", match_date: "2027-03-01", kicked_off_at: "2027-03-01 15:00:00+00:00", opta_home_team_id: "a", opta_away_team_id: "b"}
+          - {opta_match_id: "f1", changed_at: "2026-10-16 08:00:00+00:00"}
+          - {opta_match_id: "f1", changed_at: "2026-10-17 08:00:00+00:00"}
       - input: ref('int_fixtures_matchday_derived')
         rows:
           - {opta_match_id: "m1", matchday: 3}
@@ -28,7 +38,9 @@ unit_tests:
           - {opta_match_id: "m1", source_side: "awayTeam", bbc_manager_id: "a1", manager_name: "Away Boss"}
     expect:
       rows:
-        - {opta_match_id: "m1", has_result: true, season: "2025-2026", match_date: "2026-05-16", matchday: 3, home_points: 3, away_points: 0, bbc_home_manager_id: "h1", bbc_away_manager_id: "a1"}
-        - {opta_match_id: "m2", has_result: true, season: "2026-2027", match_date: "2026-07-01", home_points: 1, away_points: 1}
-        - {opta_match_id: "m3", has_result: true, season: "2026-2027", match_date: "2027-01-15", home_points: 0, away_points: 3}
-        - {opta_match_id: "f1", has_result: false, season: "2026-2027", match_date: "2027-03-01", matchday: null, home_points: null, away_points: null, bbc_home_manager_id: null, bbc_away_manager_id: null}
+        - {opta_match_id: "m1", state: "finished", has_result: true, is_awarded: false, season: "2025-2026", matchday: 3, winner_side: "home", home_score_fulltime: 2, home_points: 3, away_points: 0, venue_name: "Emirates Stadium", bbc_home_manager_id: "h1", bbc_away_manager_id: "a1", kickoff_changed_at: null}
+        - {opta_match_id: "m2", state: "finished", has_result: true, is_awarded: false, season: "2026-2027", matchday: null, winner_side: "draw", home_score_fulltime: 1, home_points: 1, away_points: 1, venue_name: null, bbc_home_manager_id: null, bbc_away_manager_id: null, kickoff_changed_at: null}
+        - {opta_match_id: "m3", state: "in_play", has_result: false, is_awarded: false, season: "2026-2027", matchday: null, winner_side: null, home_score_fulltime: null, home_points: null, away_points: null, venue_name: null, bbc_home_manager_id: null, bbc_away_manager_id: null, kickoff_changed_at: null}
+        - {opta_match_id: "f1", state: "scheduled", has_result: false, is_awarded: false, season: "2026-2027", matchday: null, winner_side: null, home_score_fulltime: null, home_points: null, away_points: null, venue_name: null, bbc_home_manager_id: null, bbc_away_manager_id: null, kickoff_changed_at: "2026-10-17 08:00:00+00:00"}
+        - {opta_match_id: "w1", state: "finished", has_result: true, is_awarded: true, season: "2026-2027", matchday: null, winner_side: "home", home_score_fulltime: 0, home_points: 3, away_points: 0, venue_name: null, bbc_home_manager_id: null, bbc_away_manager_id: null, kickoff_changed_at: null}
+        - {opta_match_id: "u1", state: "no_longer_listed", has_result: false, is_awarded: false, season: "2026-2027", matchday: null, winner_side: null, home_score_fulltime: null, home_points: null, away_points: null, venue_name: null, bbc_home_manager_id: null, bbc_away_manager_id: null, kickoff_changed_at: null}

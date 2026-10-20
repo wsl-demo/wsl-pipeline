@@ -9,6 +9,9 @@ from dagster_duckdb import DuckDBResource
 # so a table name must be unique across sources.
 SOURCES = {
     "bbc_sport": [
+        "listing_fetches",
+        "listing_events",
+        "match_pages",
         "matches",
         "match_teams",
         "match_players",
@@ -18,7 +21,6 @@ SOURCES = {
         "match_actions",
         "player_match_stats",
         "team_match_stats",
-        "fixtures",
     ],
     "wsl_football": [
         "squad_players",

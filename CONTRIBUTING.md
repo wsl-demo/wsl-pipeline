@@ -10,7 +10,7 @@ them into staging, intermediate and mart models. Run `just` to list commands.
    - `WSL_RAW_DIR`: directory holding the source data CSV files (absolute, or relative to the repo root).
    - `DATABASE_NAME`: DuckDB file created in `analytics/`.
    - `PUBLISH_PG_*`: where `just publish` sends the finished tables. Only needed to publish; see [Publishing to the app](#publishing-to-the-app).
-3. Run `just setup` to ingest the CSVs and build every model.
+3. Run `just setup` to load the CSVs into the warehouse, then `just build` to build every model.
 
 ## Building a model
 
@@ -201,10 +201,26 @@ They also run as part of `just build`. Dagster's run skips them, because
 
 ## Publishing to the app
 
-`just publish` runs the whole graph (ingest, build, test) and then copies the
-marts into the app's Postgres. Dagster skips the publish step when any dbt test
-fails, so a red build never reaches the app; this is why there is no
-publish-only command.
+`just publish` copies the marts as they are in the warehouse into the app's
+Postgres. It builds nothing, so run `just build` first. It runs `dbt test`
+before copying, and a failing test stops it there, so a red build never reaches
+the app.
+
+The app's Postgres runs in the app repo's Docker Compose (expected at
+`../fullstack`), which also creates the roles and schemas. The `db-*` recipes
+here run that repo's recipes, so start it from here first:
+
+```bash
+just db-ready    # start Postgres, or create it if missing
+just db-reset    # or wipe it and recreate the empty schemas
+just build
+just publish
+just db-status   # row counts, as the app's API sees them
+```
+
+A fresh database needs `db-reset`, not only deleting the container: the data
+lives in a Docker volume, and the app's `deploy/db-init/` scripts run only
+against an empty one.
 
 - **Where:** the `analytics` schema of the app's database. The pipeline connects
   as `pipeline_writer`, which can create and replace tables in `analytics` and
@@ -238,8 +254,9 @@ table by dropping it.
 
 | Command | Purpose |
 | --- | --- |
-| `just setup` | Ingest raw data and build all models; creates the warehouse. Publishes nothing. |
-| `just publish` | `setup`, then copy the finished marts into the app's Postgres. |
+| `just setup` | Load the raw CSVs into DuckDB; creates the warehouse. Builds no models. |
+| `just publish` | Run the tests, then copy the marts into the app's Postgres. Builds nothing. |
+| `just db-ready` / `db-reset` / `db-status` | Start, wipe or inspect the app's Postgres, via `../fullstack`. |
 | `just dagster` | Dagster UI at <http://localhost:3000> for runs, lineage and asset checks. |
 | `just build [args]` | `dbt build`, e.g. `--select stg_bbc_sport__matches+`. |
 | `just failures` | Show rows behind failing tests. |
@@ -248,6 +265,6 @@ table by dropping it.
 | `just dbt <cmd>` | Run any other dbt command. |
 
 DuckDB allows one writer at a time, so **disconnect in DBeaver before running
-`just setup`, `just build` or Dagster**, or they fail with `Could not set lock on file`.
+`just setup`, `just build`, `just publish` or Dagster**, or they fail with `Could not set lock on file`.
 
-To start over, delete `analytics/$DATABASE_NAME` and run `just setup`.
+To start over, delete `analytics/$DATABASE_NAME` and run `just setup` then `just build`.

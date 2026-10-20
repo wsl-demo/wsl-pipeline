@@ -1,0 +1,38 @@
+models:
+  - name: int_matches_kickoff_changes_derived
+    description: |
+      Every change to a match's listed kickoff: its date moved, its time moved,
+      or a TBC time was confirmed. Each observation is compared with the one
+      before it, so a reschedule is kept as a fact rather than overwritten.
+      Every listing fetch has been kept since 18 October 2026, so earlier
+      changes are unknown.
+
+      **Grain:** one row per change (`bbc_match_id`, `changed_at`).
+    data_tests:
+      - unique:
+          column_name: "bbc_match_id || '|' || CAST(changed_at AS varchar)"
+    columns:
+      - name: bbc_match_id
+        description: "{{ doc('bbc_match_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }}"
+      - name: changed_at
+        description: "When the change was first observed. BBC made it at some point after `previous_observed_at`."
+        data_tests:
+          - not_null
+      - name: previous_observed_at
+        description: "The observation before, which still showed the old kickoff."
+      - name: previous_match_date
+        description: "The date listed before the change."
+      - name: previous_kicked_off_at
+        description: "The kickoff listed before the change; null if it was TBC."
+      - name: previous_is_kickoff_time_tbc
+        description: "Whether the time was TBC before the change."
+      - name: match_date
+        description: "The date listed from the change on."
+      - name: kicked_off_at
+        description: "The kickoff listed from the change on; null if TBC."
+      - name: is_kickoff_time_tbc
+        description: "Whether the time is TBC from the change on."

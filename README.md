@@ -105,8 +105,9 @@ repeat them:
 ```bash
 cp .env.example .env   # then point WSL_RAW_DIR at the CSV directory
 uv sync
-just setup             # ingest everything and build every model
-just publish           # the same, then hand the marts to the app
+just setup             # load the raw CSVs into DuckDB
+just build             # build and test every model
+just publish           # test again, then hand the marts to the app
 just dagster           # explore lineage and runs at http://localhost:3000
 ```
 

@@ -1,0 +1,40 @@
+models:
+  - name: stg_bbc_sport__match_pages
+    description: |
+      BBC's match pages themselves (raw `bbc_sport.match_pages`), as of their
+      latest stored version: editorial pages about a match. The scraper fetches
+      a page when its listing shows the match finished, again once it has
+      settled (14 days after kickoff), and whenever the listing's result
+      changes, so `fetched_at` says how current the page's details are.
+
+      **Grain:** one row per page (`bbc_match_page_id`, tested unique), and so
+      one per match that has a page.
+    columns:
+      - name: bbc_match_page_id
+        description: "{{ doc('bbc_match_page_id') }}"
+        data_tests:
+          - unique
+          - not_null
+      - name: bbc_match_id
+        description: "{{ doc('bbc_match_id') }}"
+        data_tests:
+          - not_null
+      - name: opta_match_id
+        description: "{{ doc('opta_match_id') }} {{ doc('opta_id_from_bbc_id') }}"
+        data_tests:
+          - unique
+          - not_null
+      - name: page_title
+        description: "The page's headline."
+      - name: coverage_started_at
+        description: "Start of the page's live coverage. Not the kickoff: for 67 of 434 matches it is earlier, mostly by 15 to 60 minutes."
+      - name: coverage_ended_at
+        description: "End of the page's live coverage."
+      - name: fetched_at
+        description: "When the stored version of the page was fetched."
+        data_tests:
+          - not_null
+      - name: first_fetched_at
+        description: "When the page's first version was fetched."
+      - name: fetched_versions
+        description: "How many versions of the page have been fetched."

@@ -1,0 +1,37 @@
+models:
+  - name: stg_bbc_sport__listing_fetches
+    description: |
+      Every fetch of a BBC listing page (raw `bbc_sport.listing_fetches`), with
+      the window of days BBC applied. A listing names every match BBC dates in
+      its window, so a fetch is also evidence of which matches BBC did *not*
+      list there at that moment. Each crawl covers every day from 1 July of the
+      season to a year ahead, the current month as three windows split at
+      today.
+
+      **Grain:** one row per fetch (`listing_fetch_id`, tested unique).
+    columns:
+      - name: listing_fetch_id
+        description: "The fetch: the crawl run's start and the page fetched, e.g. `2026-10-18T15:34:22+00:00 2026-10?filter=fixtures`."
+        data_tests:
+          - unique
+          - not_null
+      - name: crawl_run_id
+        description: "The crawl run the fetch belongs to, as the time it started. Null for the pages fetched before the fetch log existed."
+      - name: fetched_at
+        description: "When the page was fetched. For pages migrated from before the fetch log, when the old crawler wrote the file."
+        data_tests:
+          - not_null
+      - name: window_start_date
+        description: "First day of the window BBC applied."
+        data_tests:
+          - not_null
+      - name: window_end_date
+        description: "Last day of the window BBC applied."
+        data_tests:
+          - not_null
+      - name: bbc_today_date
+        description: "The day BBC counted as today, in the UK."
+      - name: listing_file
+        description: "The stored page this fetch saw. Fetches that found the page unchanged share one."
+        data_tests:
+          - not_null

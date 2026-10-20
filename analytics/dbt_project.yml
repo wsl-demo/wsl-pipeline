@@ -52,5 +52,11 @@ models:
       +tags:
         - wsl
 
+vars:
+  # The first season the marts cover. BBC's listings go back to 2020-21, but
+  # match pages (squads, statistics, venues, managers) only exist from 2023-24,
+  # so earlier seasons would be results without anything else.
+  first_season: "2023-2024"
+
 flags:
   require_generic_test_arguments_property: true

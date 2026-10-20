@@ -13,13 +13,16 @@ version: 2
 sources:
   - name: bbc_sport
     description: >
-      Women's Super League match data sourced from BBC Sport: each played
-      match's page, and the fixtures pages listing matches to come.
+      Women's Super League match data sourced from BBC Sport: BBC's listing of
+      every match (each fetch of a dated window, and the matches each stored
+      page listed, in any state), and each finished match's own page. Every
+      table is an observation as of a fetch; see the scraper's
+      `src/wsl/bbc/README.md`.
     schema: raw
     loader: just setup
     tables:
       - name: matches
-        description: One row per played match, from its BBC match page. Staged by `stg_bbc_sport__matches`.
+        description: One row per finished match with a BBC match page, from the page's copy of the match (its latest version). Staged by `stg_bbc_sport__matches`.
         config:
           loaded_at_field: "cast(source_fetched_at as timestamptz)"
         columns:
@@ -34,16 +37,6 @@ sources:
             description: "{{ doc('raw_match_urn') }}"
             data_tests:
               - unique
-              - not_null
-          - name: startDateTime
-            data_type: varchar
-            description: >
-              An ISO 8601 UTC timestamp BBC labels as the start time, e.g.
-              `2023-10-21T11:30:00.000Z`. Unreliable: for 66 of 431 matches it
-              disagrees with the kickoff the page displays, and the
-              substitution timestamps show the displayed one is right. Not used
-              by staging.
-            data_tests:
               - not_null
           - name: date
             data_type: varchar
@@ -63,7 +56,7 @@ sources:
             description: Name of the competition stage; `Regular Season` for every match so far.
           - name: periodLabel_value
             data_type: varchar
-            description: The match state BBC labels the score with; `FT` (full time) for every match, as the table holds only finished matches.
+            description: The match state BBC labels the score with; `FT` (full time) for every match, as the scraper fetches a page only once its listing says the match is finished.
             data_tests:
               - accepted_values:
                   arguments:
@@ -98,7 +91,7 @@ sources:
             description: "{{ doc('venue_name') }}"
           - name: attendance_value
             data_type: varchar
-            description: "Crowd size, e.g. `3302`. Missing for 3 matches."
+            description: "Crowd size, e.g. `3302`. Missing for 3 of 438 matches. BBC adds it to a page days after some matches, which is one reason pages are fetched again once settled."
           - name: home_id
             data_type: varchar
             description: "{{ doc('opta_team_id') }} The home team."
@@ -510,40 +503,148 @@ sources:
             data_type: varchar
             description: "{{ doc('stat_value') }}"
 
-      - name: fixtures
+      - name: listing_fetches
         description: >
-          BBC's fixtures pages, one per month: one row per match the page
-          listed as still to come when it was fetched. Past months' pages are
-          not fetched again, so a played match can stay listed; its result
-          appears in `matches` under the same ID. Staged by
-          `stg_bbc_sport__fixtures`.
+          One row per fetch of a BBC listing page (`scores-fixtures`), from the
+          scraper's fetch log: when it was fetched, the window of days BBC
+          applied, and the stored page it saw. A listing names every match BBC
+          dates within its window, whatever its status, so a match missing from
+          a fetch that covered its date is no longer listed there. Every run
+          covers each day from 1 July of the season to a year ahead. Staged by
+          `stg_bbc_sport__listing_fetches`.
+        config:
+          loaded_at_field: "cast(fetched_at as timestamptz)"
         columns:
-          - name: month
+          - name: fetch_id
             data_type: varchar
-            description: The month heading the fixture is listed under, e.g. `2026-10`.
-          - name: event_id
+            description: "The fetch: the crawl run's start and the page fetched, e.g. `2026-10-18T15:34:22+00:00 2026-10?filter=fixtures`."
+            data_tests:
+              - unique
+              - not_null
+          - name: run_id
+            data_type: varchar
+            description: "The crawl run, as the time it started. Empty for the 86 pages fetched before the fetch log existed, which were migrated into it."
+          - name: fetched_at
+            data_type: varchar
+            description: "When the page was fetched, as an ISO timestamp with offset. For migrated pages, the file's modification time, which the old crawler set when it wrote the page."
+            data_tests:
+              - not_null
+          - name: selectedStartDate
+            data_type: varchar
+            description: "First day of the window BBC applied, e.g. `2026-10-01`. Read from the page, not assumed from the URL."
+            data_tests:
+              - not_null
+          - name: selectedEndDate
+            data_type: varchar
+            description: "Last day of the window BBC applied, e.g. `2026-10-17`."
+            data_tests:
+              - not_null
+          - name: todayDate
+            data_type: varchar
+            description: "The day BBC counted as today, in the UK. It splits the current month into results (before), today and fixtures (after)."
+          - name: source_file
+            data_type: varchar
+            description: "The stored page the fetch saw, e.g. `listings/2026-10/9f3c2a1b7d4e5f60.html`. Fetches that found the page unchanged share one."
+            data_tests:
+              - not_null
+
+      - name: listing_events
+        description: >
+          One row per match per stored listing page: the match as that page
+          listed it, verbatim. A page that did not change between fetches is
+          stored once, so join `listing_fetches` on `source_file` for one row per
+          match per fetch. Holds every match BBC has listed in any state, with
+          or without a match page, including the 2020-21 to 2022-23 seasons,
+          which have no pages. Staged by `stg_bbc_sport__listing_events`.
+        data_tests:
+          - unique:
+              column_name: "source_file || '|' || id"
+              description: One row per match per stored page.
+        columns:
+          - name: source_file
+            data_type: varchar
+            description: "The stored page that listed the match."
+            data_tests:
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('bbc_sport', 'listing_fetches')
+                    field: source_file
+          - name: id
             data_type: varchar
             description: "{{ doc('bbc_match_id') }}"
             data_tests:
-              # Not unique: a rescheduled match can be listed under its old
-              # month and its new one. Staging keeps one.
               - not_null
-          - name: date_heading
+          - name: status
             data_type: varchar
-            description: The day heading the fixture is listed under, without a year, e.g. "Sunday 18th October".
-          - name: kickoff_time
+            description: >
+              BBC's lifecycle for the match when listed: `PreEvent` (scheduled),
+              `MidEvent` (being played) or `PostEvent` (finished). Tested
+              against these three as a tripwire: BBC must show postponed,
+              abandoned or cancelled matches somehow, but none has been
+              observed, and an unseen value should fail the build rather than
+              be mapped silently.
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['PreEvent', 'MidEvent', 'PostEvent']
+          - name: statusComment_value
             data_type: varchar
-            description: Kickoff in UK local time, e.g. `14:00`, or `TBC` until BBC confirms it.
-          - name: home_participant_id
+            description: "The state in words: `Scheduled`; the match clock while in play (`57'`, `HT`, `90'+1`); `FT`; or, for one match in 2021, `Match awarded to Tottenham Hotspur`."
+          - name: startDateTime
+            data_type: varchar
+            description: "Kickoff in UTC, e.g. `2026-10-18T13:00:00Z`; a bare date, e.g. `2027-05-22`, while the kickoff time is unconfirmed. Unlike `match_pages.startDateTime`, this is the kickoff."
+            data_tests:
+              - not_null
+          - name: date_isoDate
+            data_type: varchar
+            description: "The match's date in the UK, e.g. `2026-10-18`."
+            data_tests:
+              - not_null
+          - name: time_timeCertainty
+            data_type: varchar
+            description: "`true` when the kickoff time is confirmed; `false` while BBC shows it as TBC."
+          - name: home_id
             data_type: varchar
             description: "{{ doc('opta_team_id') }} The home team."
             data_tests:
               - not_null
-          - name: away_participant_id
+          - name: away_id
             data_type: varchar
             description: "{{ doc('opta_team_id') }} The away team."
             data_tests:
               - not_null
+          - name: home_urn
+            data_type: varchar
+            description: "{{ doc('raw_team_urn') }} The home team."
+          - name: away_urn
+            data_type: varchar
+            description: "{{ doc('raw_team_urn') }} The away team."
+          - name: home_score
+            data_type: varchar
+            description: "The home side's score when listed: the running score while in play. Absent for a match still to come."
+          - name: away_score
+            data_type: varchar
+            description: "The away side's score when listed: the running score while in play. Absent for a match still to come."
+          - name: home_runningScores_halftime
+            data_type: varchar
+            description: "{{ doc('score_halftime') }} The home team."
+          - name: away_runningScores_halftime
+            data_type: varchar
+            description: "{{ doc('score_halftime') }} The away team."
+          - name: home_runningScores_fulltime
+            data_type: varchar
+            description: "{{ doc('score_fulltime') }} The home team; the running score while in play."
+          - name: away_runningScores_fulltime
+            data_type: varchar
+            description: "{{ doc('score_fulltime') }} The away team; the running score while in play."
+          - name: winner
+            data_type: varchar
+            description: "`home`, `away` or `draw`. While the match is in play, the side leading at the time; a result only when `status` is `PostEvent`. An awarded match has a winner and a 0-0 score."
+          - name: tipoTopicId
+            data_type: varchar
+            description: "{{ doc('bbc_match_page_id') }} Null until BBC has made one, and for every match before 2023-24."
           - name: tournament_disambiguatedName
             data_type: varchar
             description: "{{ doc('tournament_name') }}"
@@ -553,3 +654,47 @@ sources:
           - name: tournament_id
             data_type: varchar
             description: "{{ doc('opta_tournament_id') }}"
+
+      - name: match_pages
+        description: >
+          One row per BBC match page, as of its latest stored version: the page
+          itself, an editorial asset about one match, not the match. Every
+          version of a page is kept by the scraper; this is the latest. Staged by
+          `stg_bbc_sport__match_pages`.
+        config:
+          loaded_at_field: "cast(source_fetched_at as timestamptz)"
+        columns:
+          - name: source_match_id
+            data_type: varchar
+            description: "{{ doc('bbc_match_page_id') }}"
+            data_tests:
+              - unique
+              - not_null
+          - name: match_urn
+            data_type: varchar
+            description: "{{ doc('raw_match_urn') }}"
+            data_tests:
+              - not_null
+          - name: title
+            data_type: varchar
+            description: "The page's headline, e.g. \"Dominant Chelsea go top of WSL with win over Spurs\"."
+          - name: startDateTime
+            data_type: varchar
+            description: >
+              Start of the page's live coverage, as an ISO timestamp, e.g.
+              `2026-04-29T17:30:00.000Z` for an 18:00 UTC kickoff. Not the kickoff:
+              it differs from it for 67 of 434 matches, mostly by 15 to 60 minutes.
+          - name: endDateTime
+            data_type: varchar
+            description: "End of the page's live coverage, from the header component's parameters, e.g. `2026-04-29T20:41:00.000Z`."
+          - name: source_fetched_at
+            data_type: varchar
+            description: "When this version of the page was fetched, as an ISO timestamp."
+            data_tests:
+              - not_null
+          - name: source_first_fetched_at
+            data_type: varchar
+            description: "When the page's first version was fetched."
+          - name: source_versions
+            data_type: varchar
+            description: "How many versions of the page have been fetched: once when the match finished, again once it had settled (14 days after kickoff), and whenever the listing's result changed."

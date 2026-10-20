@@ -11,6 +11,11 @@ set dotenv-load
 dbt := justfile_directory() / ".venv/bin/dbt"
 python := justfile_directory() / ".venv/bin/python"
 
+# The app's Postgres belongs to the app repo's Docker Compose, which also
+# creates the roles and schemas publishing needs. The db-* recipes run that
+# repo's own recipes rather than copying them, so there is one definition.
+app_justfile := justfile_directory() / "../fullstack/Justfile"
+
 # List avaialble recipes
 default:
     @just --list
@@ -25,25 +30,38 @@ _require-warehouse:
 dagster:
     uv run dagster dev -f orchestration/definitions.py
 
-# Ingest the raw CSVs and build every model (creates the warehouse, publishes nothing)
+# Load the raw CSVs into DuckDB's `raw` schema (creates the warehouse, builds no models)
 [working-directory: '..']
 setup:
-    # Refresh dbt's manifest first: Dagster builds its assets from it, and
-    # `prepare_if_dev` only re-parses under `dagster dev`, not this command.
+    # Refresh dbt's manifest first: Dagster loads its whole graph from it, even
+    # to materialize only the raw tables, and `prepare_if_dev` only re-parses
+    # under `dagster dev`, not this command.
     cd analytics && {{ dbt }} parse
-    uv run dagster asset materialize -f orchestration/definitions.py --select '* and not key:"publish_marts"'
+    uv run dagster asset materialize -f orchestration/definitions.py --select 'group:raw_ingestion'
 
-# Ingest, build, test, then copy the finished marts into the app's Postgres.
-# Always the whole graph, never publish alone: Dagster skips the publish step
-# when any dbt test fails, so a red build can't reach the app. Needs the app's
+# Builds nothing, so run `just build` first. The tests are the gate: a failing
+# one stops the recipe before anything reaches the app. Needs the app's
 # Postgres running.
+# Test the warehouse as it stands, then copy the marts into the app's Postgres
 [working-directory: '..']
-publish:
-    cd analytics && {{ dbt }} parse
-    uv run dagster asset materialize -f orchestration/definitions.py --select '*'
+publish: _require-warehouse
+    cd analytics && {{ dbt }} parse && {{ dbt }} test
+    uv run dagster asset materialize -f orchestration/definitions.py --select 'key:"publish_marts"'
 
-# Build models and run tests
-build *args:
+# Start the app's Postgres, creating its roles and schemas if it's new
+db-ready:
+    just --justfile {{ app_justfile }} db-ready
+
+# Wipe the app's Postgres and recreate its roles and empty schemas
+db-reset:
+    just --justfile {{ app_justfile }} db-reset
+
+# Row counts of the published tables, as the app's API sees them
+db-status:
+    just --justfile {{ app_justfile }} db-status
+
+# Build models (staging, intermediate, marts) and run tests
+build *args: _require-warehouse
     {{ dbt }} build "$@"
 
 # Preview a model's rows

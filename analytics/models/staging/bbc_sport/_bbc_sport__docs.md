@@ -23,8 +23,10 @@ team ID cannot be derived from it.
 {% enddocs %}
 
 {% docs bbc_match_page_id %}
-BBC's match page slug, as in the page's URL, e.g. `c04xwd27dr2t`. Only played
-matches have one.
+BBC's match page slug, as in the page's URL, e.g. `c04xwd27dr2t`: the page about
+the match, not the match. Matches have one only from the 2023-24 season. BBC
+can make it days before kickoff: two matches on 24 October 2026 had one by
+20 October.
 {% enddocs %}
 
 {% docs opta_tournament_id %}

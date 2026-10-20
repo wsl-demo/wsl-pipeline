@@ -6,7 +6,7 @@ WITH parsed AS (
         -- carry.
         {{ analytics.strip_urn('"urn"', 'team') }} AS bbc_team_id,
         -- Opta's team ID, which BBC calls the participant ID and sends as its
-        -- own column. The fixtures page uses it in place of the URN.
+        -- own column. Listings use it in place of the URN.
         "id" AS opta_team_id,
         "name_fullName" AS team_name,
         "name_shortName" AS team_short_name,
